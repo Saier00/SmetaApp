@@ -1,0 +1,13 @@
+﻿@model IEnumerable<string>
+
+<div class="result-space">
+@foreach (var n in Model)
+{
+    <div onclick="$('#find-mat').val($(this).text());" class="find-result" >@n</div>
+}
+</div>
+
+<script>
+    if ("@Model.Any()"== "False")
+        $(".result-space").hide();
+</script>

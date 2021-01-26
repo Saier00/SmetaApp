@@ -1,0 +1,13 @@
+﻿@model IEnumerable<SmetaApp.Models.MatNameMap>
+
+<div class="result-space">
+    @foreach (var j in Model)
+    {
+        <div onclick="$('#findname').val($(this).text());" class="find-result">@j.MatName</div>
+    }
+</div>
+
+<script>
+    if ("@Model.Any()"== "False")
+        $(".result-space").hide();
+</script>

@@ -1,0 +1,421 @@
+﻿@model SmetaApp.Models.MechPrice
+
+<script lang="javascript" src="~/Scripts/xlsx.full.min.js"></script>
+
+@{
+    ViewBag.Title = "AddMechPrices";
+}
+<!--PageStart-->
+<h2>AddMechPrices</h2>
+<!--FromSheetJSdemo-->
+<div id="filedownload">
+    <div id="drop" class="drop">Drop an Excel file here to parse...</div>
+    <input type="file" name="xlfile" id="xlf" />
+    <input type="button" value="Ручное заполнение" onclick="woParsing();$('#filedownload').hide();$('#addingfield').show();" />
+</div>
+
+<div id="addingfield" hidden>
+    <div>
+        @using (Html.BeginForm("AddMechPrices", "MechPrice", FormMethod.Post, new { id = "addingform" }))
+        {
+            <table id="table" class="table">
+                <tr>
+                    <th>
+                        Название
+                    </th>
+                    <th>
+                        Код
+                    </th>
+                    <th>
+                        Eur
+                    </th>
+                    <th>
+                        Dol
+                    </th>
+                    <th>
+                        Rub
+                    </th>
+                    <th>
+                        Скидка поставщика
+                    </th>
+                    <th>
+                        Удалить?
+                    </th>
+                    <th>
+                        Информация
+                    </th>
+                </tr>
+                <tr class='addmps' id="tobefore">
+                    <td colspan='8'>
+                        <input type='button' value='Добавить наименование' onclick='appendEmptyPrice();'/>
+                    </td>
+                </tr>
+            </table>
+        }
+        </div>
+
+    <input type="button" id="saveresults" value="Добавить" />
+</div>
+<!--PageEnd-->
+
+<!--HiddenCheckMPsFormStart-->
+<div id="check-mps" hidden>
+    @using (Ajax.BeginForm("CheckMPs",  new AjaxOptions { OnSuccess = "checkResMP" }))
+    {
+    }
+    <script>
+        let current;
+        function addMPNameEl(el) {
+            current = el.closest("tr");
+            addMPName(el.val());
+        }
+        function addMPName(n) {
+            $("#check-mps").children("form").append("<input type='text' name='mps' value='"+n+"'/>");
+        }
+        function resetCheckMPsForm(){
+            $("#check-mps").children("form").empty();
+        }
+        function submitCheckMPsForm() {
+            $("#check-mps").children("form").submit();
+        }
+        //OnSuccess
+        function checkResMP(data) {
+            let infos = $("#table").find(".info").toArray();
+            for (let i = 0; i < Math.max(infos.length, data.length); i++) {
+                if (data[i] == true) {
+                    nameUsing($(infos[i]));
+                }
+            }
+            resetCheckMPsForm();
+            //After first execution form will work only with one value at the same time
+            checkResMP = function (data) {
+                if (current !== undefined) {
+                    if(data[0]==true)
+                        nameUsing(current.children(".info"));
+                    else
+                        nameUsingRemove(current.children(".info"));
+                }
+                resetCheckMPsForm();
+            }
+        }
+    </script>
+</div>
+<!--HiddenCheckMPsFormEnd-->
+
+<script>
+    function handleDragover(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        if (e.dataTransfer === undefined)
+            e.dataTransfer = e.originalEvent.dataTransfer;
+        e.dataTransfer.dropEffect = 'copy';
+    }
+    $("#drop").bind('dragenter', handleDragover);
+    $("#drop").bind('dragover', handleDragover);
+
+    function handleDrop(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        if (e.dataTransfer === undefined)
+            e.dataTransfer = e.originalEvent.dataTransfer;
+        let files = e.dataTransfer.files, f = files[0];
+        let reader = new FileReader();
+        reader.onload = function (e) {
+            let data = new Uint8Array(e.target.result);
+            let workbook = XLSX.read(data, { type: 'array' });
+            if (parseWb(workbook)) {
+                $("#filedownload").hide();
+                $("#addingfield").show();
+
+            }
+        };
+        reader.readAsArrayBuffer(f);
+    }
+    $("#drop").bind('drop', handleDrop);
+
+    function handleFile(e) {
+        let files = e.target.files, f = files[0];
+        let reader = new FileReader();
+        reader.onload = function (e) {
+            let data = new Uint8Array(e.target.result);
+            let workbook = XLSX.read(data, { type: 'array' });
+            if (parseWb(workbook)) {
+                $("#filedownload").hide();
+                $("#table").show();
+            }
+        };
+        reader.readAsArrayBuffer(f);
+    }
+    $("#xlf").bind('change', handleFile);
+
+    function parseWb(wb) {
+        if (wb.SheetNames.length > 0) {
+            let m = [];
+            for (let ws of wb.SheetNames) {
+                ws = wb.Sheets[ws];
+                if (ws["!ref"] === undefined)
+                    continue;
+
+                let rg = ws["!ref"].split(":");
+                rg = rg.map(XLSX.utils.decode_cell);
+                let cs = rg[0].c,
+                    ce = rg[1].c,
+                    rs = rg[0].r,
+                    re = rg[1].r;
+
+                let cols = new Array(6),
+                    regs = [/наим/i, /код/i, /евр/i, /дол/i, /скидк/i, /цена|руб/i],
+                    names = ["Name", "Code", "Eur", "Dol","Discount", "Rub"];
+                    ind = 0,
+                    isFound = false,
+                    lastR=rs;
+                try {
+                    //Try to find cols, matching regs
+                    for (let j = rs; j <= re; j++) {
+                        if (ind != 6) {
+                            ind = 0;
+                            cols = new Array(6);
+                        }
+                        else {
+                            //Skip headers
+                            lastR = j;
+                            isFound = true;
+                            break;
+                        }
+                        for (let i = cs; i <= ce&&ind!=6; i++) {
+                            let cell = ws[XLSX.utils.encode_cell({ c: i, r: j })];
+
+                            if (check(cell)) {
+                                continue;
+                            }
+
+                            for (let k = 0; k < regs.length&&ind!=6; k++) {
+                                if (regs[k].test(cell.w)) {
+                                    cols[k] = i;
+                                    ind++;
+                                }
+                            }
+                        }
+                    }
+                    //If didn't find all cols, just take first not empty cells
+                    if (!isFound) {
+                        for (let j = rs; j <= re; j++) {
+                            if (ind != 6) {
+                                ind = 0;
+                                cols = new Array(6);
+                            }
+                            else {
+                                //Skip headers
+                                lastR = j;
+                                isFound = true;
+                                break;
+                            }
+                            for (let i = cs; i <= ce&&ind!=6; i++) {
+                                let cell = ws[XLSX.utils.encode_cell({ c: i, r: j })];
+
+                                if (check(cell)) {
+                                    continue;
+                                }
+
+                                cols[ind++] = i;
+                            }
+                        }
+                    }
+                    if (!isFound)
+                        throw new SyntaxError("Отсутствуют наименования столбцов и количество столбцов меньше 6.");
+                    //Parsing
+                    for (let j = lastR; j < re; j++) {
+                        let item = {};
+                        let interupt = false;
+
+                        for (let k = 0; k < 6; k++) {
+                            let cell = ws[XLSX.utils.encode_cell({ c: cols[k], r: j })];
+                            if (k == 0 && check(cell)) {
+                                interupt = true;
+                                break;
+                            }
+                            if (check(cell)) {
+                                continue;
+                            }
+                            item[names[k]] = cell.w;
+                        }
+
+                        if (interupt) {
+                            break;
+                        }
+
+                        m.push(item);
+                    }
+                }
+                catch (e) {
+                    if (e.name == "SyntaxError")
+                        alert("Произошла ошибка:\n" + e.message);
+                    else
+                        throw e;
+                }
+
+            }
+            console.log(m);
+            fillTable(m);
+            return true;
+        }
+        return false;
+    }
+
+    function woParsing() {
+        fillTable([]);
+    }
+
+    function fillTable(m) {
+        let mps = [];
+
+        //if a field of mp is undefined, make it empty:
+        for (let i of m) {
+            for (let f of ["Name", "Code", "Eur", "Dol","Discount", "Rub"]) {
+                if (i[f] === undefined) {
+                    i[f] = "";
+                }
+            }
+            //Also save all mp's names to send it for checking that they don't exist:
+            mps.push(i.Name);
+        }
+        addMPs(m);
+        checkMPs(mps);
+
+        //binding of onChange events:
+        onChangeEvents();
+    }
+
+    function addMPs(m) {
+        for (let item of m) {
+            appendPrice(item);
+        }
+    }
+
+    function checkMPs(mps) {
+        if (mps.length > 0) {
+            mps.forEach(mp => addMPName(mp));
+            submitCheckMPsForm();
+        }
+    }
+
+    function onChangeEvents() {
+        //mp's names can't be too short or empty
+        $("#table").on("input","input[name='Name']",function (e) {
+            let t = $(e.target);
+            if (t.val() == "") {
+                emptyName(t);
+                shortNameRemove(t);
+            }
+            else if (t.val().length < 5) {
+                shortName(t);
+                emptyNameRemove(t);
+                //ajax checking (without hints)
+                addMPNameEl(t);
+                submitCheckMPsForm();
+            }
+            else {
+                emptyNameRemove(t);
+                shortNameRemove(t);
+                //ajax checking (without hints)
+                addMPNameEl(t);
+                submitCheckMPsForm();
+            }
+        });
+    }
+
+    //Utility cell's functions
+    function check(cell) {
+        return cell === undefined || cell.w === undefined || cell.w == "";
+    };
+
+    $("#table").find("input").change(function () {
+        $(this).closest("td").addClass("changed");
+    });
+
+    $("#saveresults").click(function () {
+        let save = confirm("Сохранить изменения?");
+        if (save) {
+            let prices = $("#table").find("tr:has('td')");
+
+            addPrices(prices);
+        }
+    });
+
+    function addPrices(prices) {
+        if (prices.length > 0) {
+            let form = $("#addingform");
+            prices.each(function (i, el) {
+                el = $(el);
+
+                el.find("input[name]").each(function () {
+                    let t = $(this);
+                    t.attr("name", "[" + i + "]." + t.attr("name"));
+                });
+            });
+
+            form.submit();
+        }
+    }
+
+    function appendEmptyPrice() {
+        let mp = {};
+        for (let i of ["Name", "Code", "Eur", "Dol", "Discount", "Rub"]) {
+            mp[i] = "";
+        }
+        appendPrice(mp);
+    }
+
+    function appendPrice(MechPrice) {
+        $("#tobefore").before('<tr><td>' + tinput("Name", MechPrice.Name) + '</td>'
+            + '<td>' + tinput("Code", MechPrice.Code) + '</td>'
+            + '<td>' + tinput("Eur", MechPrice.Eur) + '</td>'
+            + '<td>' + tinput("Dol", MechPrice.Dol) + '</td>'
+            + '<td>' + tinput("Rub", MechPrice.Rub) + '</td>'
+            + '<td>' + tinput("Discount", MechPrice.Discount) + '</td>'
+            + '<td><input type="button" class="button-delete" value="X" onclick="$(this).closest(`tr`).remove();"/></td>'
+            +'<td class="info"></td></tr >');
+    }
+
+
+    //info's cell functions:
+    //basic:
+    function addInfo(el, type, info) {
+        if (el.children("li."+type).length == 0)
+            el.append("<li class=" + type + ">" + info + "</li>");
+    }
+
+    function removeInfo(el, type) {
+        if (el.children("li." + type).length > 0)
+            el.children("li." + type).remove();
+    }
+
+    //combined:
+    function nameUsing(i) {
+        addInfo(i, "name", "Данное наименование уже используется.");
+    }
+    function nameUsingRemove(i) {
+        removeInfo(i, "name");
+    }
+
+    function emptyName(i) {
+        addInfo(i, "name-empty", "Наименование работы не должно быть пустым");
+    }
+    function emptyNameRemove(i) {
+        removeInfo(i, "name-empty");
+    }
+
+    //ignore
+    function shortName(i) {
+        addInfo(i, "name-short", "Короткое наименование работы");
+    }
+    function shortNameRemove(i) {
+        removeInfo(i, "name-short");
+    }
+
+
+    //Utility functions:
+    function tinput(name,value){
+        return '<input type="text" name="' + name + '" value="' + value + '"/>';
+    }
+</script>

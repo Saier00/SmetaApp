@@ -1,0 +1,220 @@
+﻿<link href="~/Content/PagedList.css" rel="stylesheet" type="text/css" />
+@model PagedList.IPagedList<SmetaApp.Models.MechPrice>
+@using PagedList.Mvc;
+
+@{
+    ViewBag.Title = "EditMechPrices";
+
+    Func<int, string> pageFunc;
+    string Action;
+    if (ViewBag.Type == "Name")
+    {
+        Action = "EditFindMechPriceByName";
+        pageFunc = page => Url.Action("EditFindMechPriceByName", new { ViewBag.Search, page, size = Model.PageSize });
+    }
+    else
+    {
+        Action = "EditMechPrices";
+        pageFunc = page => Url.Action("EditMechPrices", new { page, size = Model.PageSize });
+    }
+}
+<!--PageStart-->
+<h2>EditMechPrices</h2>
+
+<div class="find-name">
+    <div><label for="findname">Поиск по наименованию:</label></div>
+    <div>
+        @using (Ajax.BeginForm("FindMechPriceByNamePartial", "MechNameMap", new AjaxOptions { UpdateTargetId = "results" }))
+        {
+            <input type="text" class="find-mech-price-by-name" name="Name" placeholder="Наименование" autocomplete="off" id="findname" />
+        }
+        <span id="results"></span>
+
+
+        @using (Html.BeginForm("EditFindMechPriceByName", "MechPrice", FormMethod.Get, new { id = "findnameform" }))
+        {
+            <input type="text" hidden name="Search" />
+            <input type="submit" value="Поиск" />
+        }
+    </div>
+</div>
+<script>
+    let str = `<input type="button" value="X" style="display:block;margin-left:160px;" class="button-delete" onclick="delOnClick(this);" />`;
+
+    function delOnClick(t) {
+        if ($(t).closest('ol').find('li').length > 1) {
+            $(t).closest('tr').addClass('changed');
+            $(t).closest('li').remove();
+        }
+        else {
+            alert('Нельзя удалить последнее из наименований для прайса');
+        }
+    }
+</script>
+@using (Html.BeginForm("EditMechPrices", "MechPrice", FormMethod.Post, new { id = "addingform" }))
+{
+    <table id="table" class="table">
+        <tr>
+            <th>
+                Название
+            </th>
+            <th>
+                Код
+            </th>
+            <th>
+                Eur
+            </th>
+            <th>
+                Dol
+            </th>
+            <th>
+                Rub
+            </th>
+            <th>
+                Скидка поставщика
+            </th>
+            <th>
+                Другие имена
+            </th>
+            <th>
+                Удалить?
+            </th>
+        </tr>
+
+        @foreach (var MechPrice in Model)
+        {
+        <tr>
+            <td>
+                @Html.EditorFor(modelItem => MechPrice.Name)
+                @Html.HiddenFor(modelItem => MechPrice.Name)
+            </td>
+            <td>
+                @Html.EditorFor(modelItem => MechPrice.Code)
+            </td>
+            <td>
+                @Html.EditorFor(modelItem => MechPrice.Eur)
+            </td>
+            <td>
+                @Html.EditorFor(modelItem => MechPrice.Dol)
+            </td>
+            <td>
+                @Html.EditorFor(modelItem => MechPrice.Rub)
+            </td>
+            <td>
+                @Html.EditorFor(modelItem => MechPrice.Discount)
+            </td>
+            <td>
+                <input type="button" value="Отобразить" onclick="$(this).hide(); $(this).nextAll('div').show();" />
+                <div hidden>
+                    <ol>
+                        @foreach (var n in MechPrice.AnotherNames)
+                        {
+                            <li style="margin-top:10px;">
+                                <input type='text' value='@n.MechName' name='n.MechName' style='width:150px;float:left;' />
+                                <input type="button" value="X" style="display:block;margin-left:160px;" class="button-delete" onclick="delOnClick(this);" />
+                            </li>
+                        }
+                    </ol>
+
+                    <input type="button" value="+" class="button-add" onclick="$(this).prevAll('ol').append(`<li style='margin-top:10px;'><input style='width:150px;float:left;' type='text' name='n.MechName'/>`+str+`</li>`);" />
+                </div>
+            </td>
+            <td>
+                <input type='checkbox' name="toDel" value="true">
+            </td>
+        </tr>
+        }
+        
+
+    </table>
+}
+Страница @(Model.PageCount < Model.PageNumber ? 0 : Model.PageNumber) из @Model.PageCount
+    @Html.PagedListPager(Model, pageFunc)
+    @using (Html.BeginForm(Action, "MechPrice", FormMethod.Get, new { id = "pagesizeform" }))
+    {
+        <select name="size" id="pagesize">
+            <option value="10">
+                10
+            </option>
+            <option value="50">
+                50
+            </option>
+            <option value="100">
+                100
+            </option>
+        </select>
+        if (ViewBag.Search != "")
+        {
+            <input name="Search" value="@ViewBag.Search" hidden />
+        }
+    }
+    <input type="button" id="saveresults" value="Сохранить" />
+    <!--PageEnd-->
+
+    <script>
+    $("#pagesize").find("option[value='@Model.PageSize']").attr("selected", "selected");
+    $("#pagesize").change(function () {
+        $(this).closest("form").submit();
+    });
+
+    $("#table").find("input").change(function () {
+        $(this).closest("tr").addClass("changed");
+    });
+
+    $("#saveresults").click(function () {
+        let save = confirm("Сохранить изменения?");
+        if (save) {
+            let prices = $("#table").find("tr.changed");
+
+            updatePrices(prices);
+        }
+    });
+
+    function updatePrices(prices) {
+        if (prices.length > 0) {
+            let form =  $("#addingform");
+            prices.each(function (i, el) {
+                el = $(el);
+
+                el.find("input[name='MechPrice.Name']").last().attr("name", "oldName");
+
+                el.find("input:not([name='toDel'],[name='oldName'],[name='n.MechName'])").each(function (ind, inp) {
+                    inp = $(inp);
+                    inp.attr("name","["+i+"]."+inp.attr("name"));
+                });
+                el.find("input[name='toDel']").attr("name", "[" + i + "].toDel");
+                el.find("input[name='oldName']").attr("name", "[" + i + "].oldName");
+                el.find("input[name='n.MechName']").each(function (ind, inp) {
+                    inp = $(inp);
+                    inp.attr("name", "[" + i + "].MechPrice.AnotherNames["+ind+"].MechName");
+                });
+            });
+
+            form.submit();
+        }
+    }
+
+    //ajax search
+    function hideOnFocus(id) {
+        return ()=>$(id).hide();
+    }
+
+    let named = hideOnFocus("#results");
+    $("#findname").bind("input", function () {
+        let t = $(this);
+        if (t.val() != "") {
+            t.closest("form").submit();
+            $("#results").show();
+            $(":not(#results)").not(t).one("focus", named);
+        }
+        else {
+            $("#results").hide();
+            $(":not(#results)").not(t).off("focus", named);
+        }
+    });
+
+
+    $("#findnameform").submit(function () {
+        $(this).find("[name='Search']").val($("#findname").val());
+    });
+    </script>

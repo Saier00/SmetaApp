@@ -1,0 +1,1642 @@
+﻿<link href="~/Content/PagedList.css" rel="stylesheet" type="text/css" />
+<script lang="javascript" src="~/Scripts/xlsx.full.min.js"></script>
+@{
+    ViewBag.Title = "AddJobs";
+}
+
+<!--PageStart-->
+<h2>AddJobs</h2>
+
+<div id="alg" style="margin-top:20px;">
+    <span>Выбранный алгоритм:</span>
+    <select id="alg-choice">
+        <option value="parseWbAlg1">
+            Алгоритм 1
+        </option>
+        <option value="parseWbAlg2">
+            Алгоритм 2
+        </option>
+    </select>
+    <span style="margin-left:50px;">Обработка на сервере:</span>
+    <input id="server" type="checkbox" />
+
+    <span style="margin-left:50px;">Выводить работ за раз:</span>
+    <select id="range" data-id="range">
+        <option value="10">
+            10
+        </option>
+        <option value="50">
+            50
+        </option>
+        <option value="100">
+            100
+        </option>
+        <option value="200">
+            200
+        </option>
+        <option value="500">
+            500
+        </option>
+        <option value="1000">
+            1000
+        </option>
+    </select>
+</div>
+
+<!--FromSheetJSdemo-->
+<div id="filedownload" style="margin-top:20px;">
+    <div id="drop" class="drop">Drop an Excel file here to parse...</div>
+    <input type="file" name="xlfile" id="xlf"/>
+    <input type="button" value="Ручное заполнение" onclick="woParsing();$('#filedownload').hide();$('#addingfield').show();"/>
+</div>
+
+<div id="addingfield" hidden style="margin-top:20px;">
+    <span>
+        <input type="button" value="Привязать наименование материала" id="bind-mat-names" onclick="floatField(bindMatNames);" />
+    </span>
+    <span>
+        <input type="button" value="Привязать наименование механизма" id="bind-mech-names" onclick="floatField(bindMechNames);" />
+    </span>
+
+    <span>
+        <input type="text" placeholder="Название страницы" id="add-page-name" />
+    </span>
+
+    <div>
+        <table id="table"></table>
+    </div>
+
+    <input type="button" id="saveresults" value="Добавить" />
+
+    <span style="margin-left:50px;">Добавлять наименования без прайс-листов:</span>
+    <input id="noprice" type="checkbox" />
+</div>
+<!--PageEnd-->
+
+<!--HiddenCheckMechsFormStart-->
+<div id="check-mechs" hidden>
+    @using (Ajax.BeginForm("CheckMechs","MechNameMap", new AjaxOptions { OnSuccess = "checkResMech" }))
+    {
+    }
+    <script>
+        function addMechName(n) {
+            $("#check-mechs").children("form").append("<input type='text' name='ms' value='"+n+"'/>");
+        }
+        function resetCheckMechsForm() {
+            $("#check-mechs").children("form").empty();
+        }
+        function submitCheckMechsForm() {
+            $("#check-mechs").children("form").submit();
+        }
+        //OnSuccess
+        function checkResMech(data) {
+
+        }
+
+        function checkResMechWithStart(start = 0) {
+            checkResMech = function (data) {
+                let infos = $("tr.job").slice(start).nextAll("tr").find("[data-type='mech-name']").nextAll("[data-type='info']").toArray();
+                for (let i = 0; i < Math.max(infos.length, data.length); i++) {
+                    if (data[i] == false) {
+                        noMech($(infos[i]));
+                    }
+                }
+            }
+        }
+    </script>
+</div>
+<!--HiddenCheckMechsFormEnd-->
+
+<!--HiddenCheckMatsFormStart-->
+<div id="check-mats" hidden>
+    @using (Ajax.BeginForm("CheckMats", "MatNameMap", new AjaxOptions { OnSuccess = "checkResMat" }))
+    {
+    }
+    <script>
+        function addMatName(n) {
+            $("#check-mats").children("form").append("<input type='text' name='ms' value='"+n+"'/>");
+        }
+        function resetCheckMatsForm(){
+            $("#check-mats").children("form").empty();
+        }
+        function submitCheckMatsForm() {
+            $("#check-mats").children("form").submit();
+        }
+        //OnSuccess
+        function checkResMat(data) {
+
+        }
+
+        function checkResMatWithStart(start = 0) {
+            checkResMat = function (data) {
+                let infos = $("tr.job").slice(start).nextAll("tr").find("[data-type='mat-name']").nextAll("[data-type='info']").toArray();
+                for (let i = 0; i < Math.max(infos.length, data.length); i++) {
+                    if (data[i] == false) {
+                        noMat($(infos[i]));
+                    }
+                }
+            }
+        }
+    </script>
+</div>
+<!--HiddenCheckMatsFormEnd-->
+
+<!--HiddenCheckJobsFormStart-->
+<div id="check-jobs" hidden>
+    @using (Ajax.BeginForm("CheckJobs",  new AjaxOptions { OnSuccess = "checkResJob" }))
+    {
+    }
+    <script>
+        let current;
+        let cj = 0;
+        let isChecking = false;
+        function addJobNameEl(el) {
+            if (!isChecking) {
+                current = el.closest("tr");
+                addJobNameType([current.find("[data-type='name']>div").text(), current.find("[data-type='type']>div").text()]);
+            }
+        }
+        function addJobNameType(n) {
+            $("#check-jobs").children("form").append("<input type='text' name='["+cj+"].Name' value='" + n[0] + "'/>");
+            $("#check-jobs").children("form").append("<input type='text' name='[" + cj + "].Type' value='" + n[1] + "'/>");
+            cj++;
+        }
+        function resetCheckJobsForm(){
+            $("#check-jobs").children("form").empty();
+            cj = 0;
+        }
+        function submitCheckJobsForm() {
+            if (!isChecking) {
+                isChecking = true;
+                $("#check-jobs").children("form").submit();
+            }
+        }
+        //OnSuccess
+        function checkResJob(data) {
+            let infos = $("[data-type='name']").nextAll("[data-type='info']").toArray();
+            for (let i = 0; i < Math.max(infos.length, data.length); i++) {
+                if (data[i] == true) {
+                    nameUsing($(infos[i]));
+                }
+            }
+            resetCheckJobsForm();
+            isChecking = false;
+            //After first execution form will work only with one value at the same time
+            checkResJobOne();
+        }
+
+        function checkResJobMany(start=0) {
+            checkResJob = function (data) {
+                let infos = $("[data-type='name']").nextAll("[data-type='info']").toArray().slice(start);
+                for (let i = 0; i < Math.max(infos.length, data.length); i++) {
+                    if (data[i] == true) {
+                        nameUsing($(infos[i]));
+                    }
+                }
+                resetCheckJobsForm();
+                isChecking = false;
+                //After first execution form will work only with one value at the same time
+                checkResJobOne();
+            };
+        }
+
+        function checkResJobOne(){
+            checkResJob = function (data) {
+                if (current !== undefined) {
+                    if (data[0] == true)
+                        nameUsing(current.children("[data-type='info']"));
+                    else
+                        nameUsingRemove(current.children("[data-type='info']"));
+                }
+                resetCheckJobsForm();
+                isChecking = false;
+            };
+        }
+    </script>
+</div>
+<!--HiddenCheckJobsFormEnd-->
+
+<!--HiddenSearchMatFormStart-->
+<div id="search-mat" hidden>
+    @using (Ajax.BeginForm("FindMatPartial", "MatNameMap", new AjaxOptions { UpdateTargetId = "resultsMat" }))
+    {
+        <input type="text" name="Name" id="findmatname" />
+    }
+    <script>
+        let currentMat;
+
+        function findMatName(n) {
+            let form = $("#search-mat").children("form");
+            form.find("input#findmatname").val(n);
+            form.submit();
+        }
+
+        function checkMat(match) {
+            if (match == "True")
+                noMatRemove(currentMat.closest("tr").children("[data-type='info']"));
+            else
+                noMat(currentMat.closest("tr").children("[data-type='info']"));
+        }
+    </script>
+</div>
+<!--HiddenSearchMatFormEnd-->
+
+<!--HiddenSearchMechFormStart-->
+<div id="search-mech" hidden>
+    @using (Ajax.BeginForm("FindMechPartial", "MechNameMap", new AjaxOptions { UpdateTargetId = "resultsMech" }))
+    {
+        <input type="text" name="Name" id="findmechname" />
+    }
+    <script>
+        let currentMech;
+
+        function findMechName(n) {
+            let form = $("#search-mech").children("form");
+            form.find("input#findmechname").val(n);
+            form.submit();
+        }
+
+        function checkMech(match) {
+            if (match == "True")
+                noMechRemove(currentMech.closest("tr").children("[data-type='info']"));
+            else
+                noMech(currentMech.closest("tr").children("[data-type='info']"));
+        }
+    </script>
+</div>
+<!--HiddenSearchMechFormEnd-->
+
+<!--HiddenJobAddFormStart-->
+<div id="add-job" hidden>
+    @using (Ajax.BeginForm("AddJobs", new AjaxOptions { OnSuccess = "onsuccess" }))
+    {
+    }
+
+    <script>
+        //form's methods
+        let hn = 0, tn = 0;
+        function addMech(name, amount) {
+            let str = '<input type="text" name="Mechs[' + hn + '].Name" value="' + name + '"/><input type="text" name="Mechs[' + hn + '].Amount" value="' + amount + '"/>';
+            $("#add-job").children("form").append(str);
+            hn++;
+        }
+
+        function addMat( name, amount, units) {
+            let str = '<input type="text" name="Mats[' + tn + '].Name" value="' + name + '"/><input type="text" name="Mats[' + tn + '].Amount" value="' + amount + '"/><input type="text" name="Mats[' + tn + '].Units" value="' + units + '"/>';
+            $("#add-job").children("form").append(str);
+            tn++;
+        }
+
+        function resetForm() {
+            let form = $("#add-job").children("form");
+            form.empty();
+        }
+        function resetMechsMats(){
+            hn = 0;
+            tn = 0;
+        }
+        function addToArray(i) {
+            let form = $("#add-job").children("form");
+
+            form.children("input:not([name^='['])").each(function (ind, el) {
+                el = $(el);
+                el.attr("name", "[" + i + "]." + el.attr("name"));
+            });
+        }
+        $("#add-job").find("form").submit(function (e) {
+            let form = $(this);
+            if($("#noprice").prop("checked"))
+                form.append("<input type='text' name='noprice' value='" + $("#noprice").prop("checked") + "'/>");
+        });
+    </script>
+
+</div>
+<!--HiddenJobAddFormEnd-->
+
+@{Html.RenderPartial("AddJobs/JobAddingTablePartial");}
+<script>
+    function parseWb(wb) {
+        return window[$("#alg-choice").find("option").filter(function () {
+            return $(this).prop("selected");
+        }).first().val()](wb);
+    }
+    $("#alg-choice").find("option[value='parseWbAlg1']").attr("selected", "selected");
+
+    function handleDragover(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        if (e.dataTransfer === undefined)
+            e.dataTransfer = e.originalEvent.dataTransfer;
+        e.dataTransfer.dropEffect = 'copy';
+    }
+    $("#drop").bind('dragenter', handleDragover);
+    $("#drop").bind('dragover', handleDragover);
+
+    function handleDrop(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        if (e.dataTransfer === undefined)
+            e.dataTransfer = e.originalEvent.dataTransfer;
+        let files = e.dataTransfer.files, f = files[0];
+        if (!$("#server").prop("checked")) {
+            let reader = new FileReader();
+            reader.onload = function (e) {
+                let data = new Uint8Array(e.target.result);
+                let workbook = XLSX.read(data, { type: 'array' });
+                if (parseWb(workbook)) {
+                    $("#filedownload").hide();
+                    $("#alg").hide();
+                    $("#addingfield").show();
+
+                }
+            };
+            reader.readAsArrayBuffer(f);
+        }
+        else {
+            var fd = new FormData;
+
+            fd.append('file', f);
+
+            fd.append('alg', $("#alg-choice").find("option").filter(function () {
+                return $(this).prop("selected");
+            }).first().val().match(/Alg\d+/)[0].match(/\d+/)[0]);
+
+            $.ajax({
+                url: '@Url.Action("ParseExcel", "Job")',
+                data: fd,
+                processData: false,
+                contentType: false,
+                type: 'POST',
+                success: function (data) {
+                    if (data.error !== undefined) {
+                        alert(data.error.message);
+                    }
+                    else {
+                        if (data.length > 0) {
+                            console.log(data);
+                            fillTable(data);
+                            $("#filedownload").hide();
+                            $("#alg").hide();
+                            $("#addingfield").show();
+                        }
+                    }
+                }
+            });
+        }
+    }
+    $("#drop").bind('drop', handleDrop);
+
+    function handleFile(e) {
+        let files = e.target.files, f = files[0];
+        if (!$("#server").prop("checked")) {
+            let reader = new FileReader();
+            reader.onload = function (e) {
+                let data = new Uint8Array(e.target.result);
+                let workbook = XLSX.read(data, { type: 'array' });
+                if (parseWb(workbook)) {
+                    $("#filedownload").hide();
+                    $("#alg").hide();
+                    $("#addingfield").show();
+
+                }
+            };
+            reader.readAsArrayBuffer(f);
+        }
+        else {
+            var fd = new FormData;
+
+            fd.append('file', f);
+
+            fd.append('alg', $("#alg-choice").find("option").filter(function () {
+                return $(this).prop("selected");
+            }).first().val().match(/Alg\d+/)[0].match(/\d+/)[0]);
+
+            $.ajax({
+                url: '@Url.Action("ParseExcel", "Job")',
+                data: fd,
+                processData: false,
+                contentType: false,
+                type: 'POST',
+                success: function (data) {
+                    if (data.error !== undefined) {
+                        alert(data.error.message);
+                    }
+                    else {
+                        if (data.length > 0) {
+                            console.log(data);
+                            fillTable(data);
+                            $("#filedownload").hide();
+                            $("#alg").hide();
+                            $("#addingfield").show();
+                        }
+                    }
+                }
+            });
+        }
+    }
+    $("#xlf").bind('change', handleFile);
+
+    //Parse functions:
+
+    function parseWbAlg1(wb) {
+        if (wb.SheetNames.length > 0) {
+            let m = [];
+            for (let ws of wb.SheetNames) {
+                ws = wb.Sheets[ws];
+                if (ws["!ref"] === undefined)
+                    continue;
+                let rg = ws["!ref"].split(":");
+                rg = rg.map(XLSX.utils.decode_cell);
+                let cs = rg[0].c,
+                    ce = rg[1].c,
+                    rs = rg[0].r,
+                    re = rg[1].r;
+
+                try {
+                    while (m.length == 0 && cs <= ce) {
+
+                        for (let i = rs; i <= re; i++) {
+                            let cell = ws[XLSX.utils.encode_cell({ c: cs, r: i })];
+
+                            if (check(cell)) {
+                                continue;
+                            }
+
+                            if (/^\s*Измеритель/.test(cell.w)) {
+                                let measurer, units;
+                                let mu = cell.w.replace(/^\s*Измеритель\S*\s+/, "").split(/\s+/);
+                                if (mu.length == 1)
+                                    units = mu[0];
+                                else
+                                    [measurer, units] = mu;
+                                
+
+                                let incr = function () {
+                                    i++;
+                                    if (i > re)
+                                        throw new SyntaxError("Неправильный формат загруженного файла:\n\tНе найденно ни одного совпадения после 'Измеритель' с: 'Код р'");
+                                    cell = ws[XLSX.utils.encode_cell({ c: cs, r: i })];
+                                    return check(cell);
+                                };
+
+                                //Try to find first not empty existing cell
+                                while (incr()) { }
+                                let name;
+                                while (!/^\s*Код р/i.test(cell.w)) {
+                                    if (/(\d*-\d*-\d*-\d*)\s+[А-Я][а-яА-Я\s\w,\.]*/.test(cell.w)) {
+                                        //[CODE][spaces][NAME]
+                                        //or [CODE][spaces][NAME][spaces][CODE][spaces][NAME]...
+                                        let matches = cell.w.match(/(\d*-\d*-\d*-\d*)\s+[А-Я][а-яА-Я\w\,\.]*(\s[а-яА-Я\w\,\.]+)*(?!\d*-\d*-\d*-\d*)/g);
+                                        for (let mch of matches) {
+                                            let item = {};
+                                            item.Code = mch.match(/^(\d*-\d*-\d*-\d*)/)[0];
+                                            item.Name = mch.replace(/^(\d*-\d*-\d*-\d*)\s+/, "");
+                                            item.Units = units;
+                                            item.Measurer = measurer;
+                                            m.push(item);
+                                        }
+                                    }
+                                    else if (/^\s*[А-Я][а-яА-Я\s\w]*/.test(cell.w)) {
+                                        //[spaces][NAME]
+                                        name = cell.w.replace(/^\s+/, "");
+                                    }
+                                    else if (/(\d*-\d*-\d*-\d*)\s+[а-я\d\(\)][а-яА-Я\s\w\,\.]*/.test(cell.w)) {
+                                        //[CODE][spaces][TYPE]
+                                        //name can be undefined
+                                        let matches = cell.w.match(/(\d*-\d*-\d*-\d*)\s+[а-я\d\(\)][а-яА-Я\w\,\.]*(\s[а-яА-Я\w\,\.]+)*(?!\d*-\d*-\d*-\d*)/g);
+                                        for (let mch of matches) {
+                                            let item = {};
+                                            item.Code = mch.match(/^(\d*-\d*-\d*-\d*)/)[0];
+                                            item.Type = mch.replace(/^(\d*-\d*-\d*-\d*)\s+/, "");
+                                            item.Name = name;
+                                            item.Units = units;
+                                            item.Measurer = measurer;
+                                            m.push(item);
+                                        }
+                                    }
+
+                                    while (incr()) { }
+                                }
+
+                                let parseTable = function () {
+                                    let namesCol, mesCol;
+                                    //Try to find "Наим"
+                                    for (let k = cs + 1; k <= ce; k++) {
+                                        let namesColCell = ws[XLSX.utils.encode_cell({ c: k, r: i })];
+                                        if (check(namesColCell))
+                                            continue;
+
+                                        if (/^\s*Наим/i.test(namesColCell.w)) {
+                                            namesCol = k;
+                                            break;
+                                        }
+                                        if (k == ce)
+                                            throw new SyntaxError("Неправильный формат загруженного файла:\n\tВ таблице отсутствует столбец содержащий в начале 'Наим':\n" + XLSX.utils.encode_cell({ c: k, r: i }));
+                                    }
+                                    //Try to find "изм"
+                                    for (let k = cs + 2; k <= ce; k++) {
+                                        if (namesCol == k && k != ce)
+                                            continue;
+                                        if (namesCol != k) {
+                                            let mesColCell = ws[XLSX.utils.encode_cell({ c: k, r: i })];
+                                            if (check(mesColCell))
+                                                continue;
+                                            if (/изм/i.test(mesColCell.w)) {
+                                                mesCol = k;
+                                                break;
+                                            }
+                                        }
+                                        if (k == ce)
+                                            throw new SyntaxError("Неправильный формат загруженного файла:\n\tВ таблице отсутствует столбец содержащий 'изм':\n" + XLSX.utils.encode_cell({ c: k, r: i }));
+                                    }
+                                    if (namesCol > mesCol) {
+                                        throw new SyntaxError("Неправильный формат загруженного файла:\n\tСтолбец 'Наименование' в таблице идет после столбца 'Ед. изм.:'\n" + XLSX.utils.encode_cell({ c: namesCol, r: i }));
+                                    }
+                                    //Try to find "Затраты труда рабочих, Средний разряд работы, Затраты труда машинистов"
+                                    let wRow, rankRow, mRow;
+                                    for (let r = i + 2; r <= re; r++) {
+                                        let wRowCell = ws[XLSX.utils.encode_cell({ c: namesCol, r: r })];
+
+                                        let leftCell = ws[XLSX.utils.encode_cell({ c: cs, r: r })];
+                                        if (!check(leftCell)) {
+                                            if (/^\s*Код р/i.test(leftCell.w) || /^\s*Измеритель/i.test(leftCell.w)) {
+                                                break;
+                                            }
+                                        }
+
+                                        if (check(wRowCell))
+                                            continue;
+                                        if (/рабочих/i.test(wRowCell.w)) {
+                                            wRow = r;
+                                            break;
+                                        }
+                                    }
+                                    for (let r = i + 2; r <= re; r++) {
+                                        let rankRowCell = ws[XLSX.utils.encode_cell({ c: namesCol, r: r })];
+
+                                        let leftCell = ws[XLSX.utils.encode_cell({ c: cs, r: r })];
+                                        if (!check(leftCell)) {
+                                            if (/^\s*Код р/i.test(leftCell.w) || /^\s*Измеритель/i.test(leftCell.w)) {
+                                                break;
+                                            }
+                                        }
+
+                                        if (check(rankRowCell))
+                                            continue;
+                                        if (/разряд/i.test(rankRowCell.w)) {
+                                            rankRow = r;
+                                            break;
+                                        }
+                                    }
+                                    for (let r = i + 2; r <= re; r++) {
+                                        let mRowCell = ws[XLSX.utils.encode_cell({ c: namesCol, r: r })];
+
+                                        let leftCell = ws[XLSX.utils.encode_cell({ c: cs, r: r })];
+                                        if (!check(leftCell)) {
+                                            if (/^\s*Код р/i.test(leftCell.w) || /^\s*Измеритель/i.test(leftCell.w)) {
+                                                break;
+                                            }
+                                        }
+
+                                        if (check(mRowCell))
+                                            continue;
+                                        if (/машинистов/i.test(mRowCell.w)) {
+                                            mRow = r;
+                                            break;
+                                        }
+                                    }
+
+                                    //Try to find mechs and mats
+                                    let mechs = [], mats = [];
+                                    let write = false;
+                                    for (let r = i + 2; r <= re; r++) {
+                                        let mechRowCell = ws[XLSX.utils.encode_cell({ c: namesCol, r: r })];
+
+                                        let leftCell = ws[XLSX.utils.encode_cell({ c: cs, r: r })];
+                                        if (!check(leftCell)) {
+                                            if (/ПРИЛОЖЕН/i.test(leftCell.w))
+                                                break;
+                                            if (/^\s*Код р/i.test(leftCell.w) || /^\s*Измеритель/i.test(leftCell.w)) {
+                                                if (r == re)
+                                                    break;
+                                                let nextCell = ws[XLSX.utils.encode_cell({ c: cs, r: r + 2 })];
+                                                //if after choosen cell no next mechs follow:
+                                                if (check(nextCell) || !/\d+-\d+|\d+\.\d+/.test(nextCell.w))
+                                                    break;
+                                                else
+                                                    continue;
+                                            }
+                                        }
+                                        if (check(mechRowCell))
+                                            continue;
+
+                                        if (/МЕХАНИЗМ/i.test(mechRowCell.w) && !write) {
+                                            write = true;
+                                        }
+                                        else if (write && !/МАТЕРИАЛ/i.test(mechRowCell.w)) {
+                                            //if mech places in two cells, its value will be in the first cell, so we can just add a part of name from the second cell to the first
+                                            if (check(leftCell)) {
+                                                if (mechs.length > 0) {
+                                                    let prevLeftCell = ws[XLSX.utils.encode_cell({ c: cs, r: r - 1 })];
+                                                    if (!check(prevLeftCell)) {
+                                                        let prevName = mechs.find(m => m.Code == prevLeftCell.w).Name;
+                                                        if (/^\s/.test(mechRowCell.w) || /\s$/.test(prevName))
+                                                            mechs.find(m => m.Code == prevLeftCell.w).Name += mechRowCell.w;
+                                                        else
+                                                            mechs.find(m => m.Code == prevLeftCell.w).Name += " " + mechRowCell.w;
+                                                        continue;
+                                                    }
+                                                }
+                                                leftCell = {};
+                                            }
+                                            let mech = {
+                                                Name: mechRowCell.w,
+                                                Code: leftCell.w,
+                                                row: r
+                                            };
+                                            mechs.push(mech);
+                                        }
+                                        else if (write && /МАТЕРИАЛ/i.test(mechRowCell.w)) {
+                                            break;
+                                        }
+                                    }
+                                    write = false;
+                                    for (let r = i + 2; r <= re; r++) {
+                                        let matRowCell = ws[XLSX.utils.encode_cell({ c: namesCol, r: r })];
+
+                                        let leftCell = ws[XLSX.utils.encode_cell({ c: cs, r: r })];
+                                        if (!check(leftCell)) {
+                                            if (/ПРИЛОЖЕН/i.test(leftCell.w))
+                                                break;
+                                            if (/^\s*Код р/i.test(leftCell.w) || /^\s*Измеритель/i.test(leftCell.w)) {
+                                                if (r == re)
+                                                    break;
+                                                let nextCell = ws[XLSX.utils.encode_cell({ c: cs, r: r + 2 })];
+                                                //if after choosen cell no next mats follow:
+                                                if (check(nextCell) || !/\d+-\d+|\d+\.\d+/.test(nextCell.w))
+                                                    break;
+                                                else
+                                                    continue;
+                                            }
+                                        }
+                                        if (check(matRowCell))
+                                            continue;
+
+                                        if (/МАТЕРИАЛ/i.test(matRowCell.w) && !write) {
+                                            write = true;
+                                        }
+                                        else if (write && !/МЕХАНИЗМ/i.test(matRowCell.w)) {
+                                            //if mat places in two cells, its value will be in the first cell, so we can just add a part of name from the second cell to the first
+                                            if (check(leftCell)) {
+                                                if (mats.length > 0) {
+                                                    let prevLeftCell = ws[XLSX.utils.encode_cell({ c: cs, r: r - 1 })];
+                                                    if (!check(prevLeftCell)) {
+                                                        let prevName = mats.find(m => m.Code == prevLeftCell.w).Name;
+                                                        if (/^\s/.test(matRowCell.w) || /\s$/.test(prevName))
+                                                            mats.find(m => m.Code == prevLeftCell.w).Name += matRowCell.w;
+                                                        else
+                                                            mats.find(m => m.Code == prevLeftCell.w).Name += " " + matRowCell.w;
+                                                        continue;
+                                                    }
+                                                }
+
+                                                leftCell = {};
+                                            }
+
+                                            let unitsCell = ws[XLSX.utils.encode_cell({ c: mesCol, r: r })];
+                                            if (check(unitsCell))
+                                                unitsCell = {};
+
+                                            let mat = {
+                                                Name: matRowCell.w,
+                                                Code: leftCell.w,
+                                                Units: unitsCell.w,
+                                                row: r
+                                            };
+                                            mats.push(mat);
+                                        }
+                                        else if (write && /МЕХАНИЗМ/i.test(matRowCell.w)) {
+                                            break;
+                                        }
+                                    }
+
+                                    //Filling items:
+                                    for (let c = mesCol + 1; c <= ce; c++) {
+                                        let codeCells = [ws[XLSX.utils.encode_cell({ c: c, r: i })], ws[XLSX.utils.encode_cell({ c: c, r: i + 1 })]];
+                                        if (check(codeCells[0]) || check(codeCells[1]))
+                                            break;
+
+                                        let code = codeCells[0].w.match(/\S+/)[0] + codeCells[1].w.match(/\S+/)[0];
+
+                                        let item = m.find((item) => item.Code == code ? true : false);
+
+                                        //If item doesn't exist, create part of it to fill manually
+                                        if (item === undefined) {
+                                            item = { Code: code };
+                                            m.push(item);
+                                        }
+
+
+                                        for (let r of [[wRow, "WLaborCosts"], [rankRow, "AvRank"], [mRow, "MLaborCosts"]]) {
+                                            if (r[0] == undefined)
+                                                continue;
+
+                                            let cell = ws[XLSX.utils.encode_cell({ c: c, r: r[0] })];
+                                            if (check(cell))
+                                                continue;
+
+                                            item[r[1]] = cell.w;
+                                        }
+
+                                        if (item.Mechs === undefined)
+                                            item.Mechs = [];
+                                        if (item.Mats === undefined)
+                                            item.Mats = [];
+
+                                        for (let mech of mechs) {
+                                            let cell = ws[XLSX.utils.encode_cell({ c: c, r: mech.row })];
+                                            if (check(cell)||cell.w=="-")
+                                                continue;
+
+                                            let newMech = {
+                                                Name: mech.Name,
+                                                Code: mech.Code,
+                                                Amount: cell.w
+                                            };
+                                            item.Mechs.push(newMech);
+                                        }
+
+
+                                        for (let mat of mats) {
+                                            let cell = ws[XLSX.utils.encode_cell({ c: c, r: mat.row })];
+                                            if (check(cell)||cell.w=="-")
+                                                continue;
+
+                                            let newMat = {
+                                                Name: mat.Name,
+                                                Code: mat.Code,
+                                                Units: mat.Units,
+                                                Amount: cell.w
+                                            };
+                                            item.Mats.push(newMat);
+                                        }
+                                    }
+                                }
+                                //Parse only when choosen cell is "Код р"
+                                for (i -= 1; i < re; i++) {
+                                    cell = ws[XLSX.utils.encode_cell({ c: cs, r: i + 1 })];
+                                    if (check(cell))
+                                        continue;
+                                    if (/^\s*Код р/i.test(cell.w)) {
+                                        let nextCell = ws[XLSX.utils.encode_cell({ c: cs, r: i + 3 })];
+                                        if (check(nextCell) || !/\d+-\d+|\d+\.\d+/.test(nextCell.w)) {
+                                            i++;
+                                            parseTable();
+                                        }
+                                    }
+                                    if (/^\s*Измеритель/.test(cell.w)) {
+                                        break;
+                                    }
+                                }
+                            }
+
+                        }
+
+                        if (m.length == 0)
+                            cs++;
+                    }
+                }
+                catch (e) {
+                    if (e.name == "SyntaxError")
+                        alert("Произошла ошибка:\n" + e.message);
+                    else
+                        throw e;
+                }
+
+            }
+
+            fillTable(m);
+            return true;
+        }
+        return false;
+    }
+
+    function parseWbAlg2(wb) {
+        if (wb.SheetNames.length > 0) {
+            let m = [];
+            for (let ws of wb.SheetNames) {
+                ws = wb.Sheets[ws];
+                if (ws["!ref"] === undefined)
+                    continue;
+                let rg = ws["!ref"].split(":");
+                rg = rg.map(XLSX.utils.decode_cell);
+                let cs = rg[0].c,
+                    ce = rg[1].c,
+                    rs = rg[0].r,
+                    re = rg[1].r;
+
+                try {
+                    while (m.length == 0 && cs <= ce) {
+
+                        for (let i = rs; i <= re; i++) {
+                            let cell = ws[XLSX.utils.encode_cell({ c: cs, r: i })];
+
+                            if (check(cell)) {
+                                continue;
+                            }
+
+                            if (/^\s*Измеритель/.test(cell.w)) {
+                                let measurer, units;
+                                let mu = cell.w.replace(/^\s*Измеритель\S*\s+/, "").split(/\s+/);
+                                if (mu.length == 1)
+                                    units = mu[0];
+                                else
+                                    [measurer, units] = mu;
+                                
+
+                                let incr = function () {
+                                    i++;
+                                    if (i > re)
+                                        throw new SyntaxError("Неправильный формат загруженного файла:\n\tНе найденно ни одного совпадения после 'Измеритель' с: 'Код р'");
+                                    cell = ws[XLSX.utils.encode_cell({ c: cs, r: i })];
+                                    return check(cell);
+                                };
+
+                                //Try to find first not empty existing cell
+                                while (incr()) { }
+                                let name;
+                                while (!/^\s*Код р/i.test(cell.w)) {
+                                    if (/(\d*-\d*-\d*-\d*)\s+[А-Я][а-яА-Я\s\w,\.]*/.test(cell.w)) {
+                                        //[CODE][spaces][NAME]
+                                        //or [CODE][spaces][NAME][spaces][CODE][spaces][NAME]...
+                                        let matches = cell.w.match(/(\d*-\d*-\d*-\d*)\s+[А-Я][а-яА-Я\w\,\.]*(\s[а-яА-Я\w\,\.]+)*(?!\d*-\d*-\d*-\d*)/g);
+                                        for (let mch of matches) {
+                                            let item = {};
+                                            item.Code = mch.match(/^(\d*-\d*-\d*-\d*)/)[0];
+                                            item.Name = mch.replace(/^(\d*-\d*-\d*-\d*)\s+/, "");
+                                            item.Units = units;
+                                            item.Measurer = measurer;
+                                            m.push(item);
+                                        }
+                                    }
+                                    else if (/^\s*[А-Я][а-яА-Я\s\w]*/.test(cell.w)) {
+                                        //[spaces][NAME]
+                                        name = cell.w.replace(/^\s+/, "");
+                                    }
+                                    else if (/(\d*-\d*-\d*-\d*)\s+[а-я\d\(\)][а-яА-Я\s\w\,\.]*/.test(cell.w)) {
+                                        //[CODE][spaces][TYPE]
+                                        //name can be undefined
+                                        let matches = cell.w.match(/(\d*-\d*-\d*-\d*)\s+[а-я\d\(\)][а-яА-Я\w\,\.]*(\s[а-яА-Я\w\,\.]+)*(?!\d*-\d*-\d*-\d*)/g);
+                                        for (let mch of matches) {
+                                            let item = {};
+                                            item.Code = mch.match(/^(\d*-\d*-\d*-\d*)/)[0];
+                                            item.Type = mch.replace(/^(\d*-\d*-\d*-\d*)\s+/, "");
+                                            item.Name = name;
+                                            item.Units = units;
+                                            item.Measurer = measurer;
+                                            m.push(item);
+                                        }
+                                    }
+
+                                    while (incr()) { }
+                                }
+
+                                let parseTable = function () {
+                                    let namesCol, mesCol;
+                                    //Try to find "Наим"
+                                    for (let k = cs + 1; k <= ce; k++) {
+                                        let namesColCell = ws[XLSX.utils.encode_cell({ c: k, r: i })];
+                                        if (check(namesColCell))
+                                            continue;
+
+                                        if (/^\s*Наим/i.test(namesColCell.w)) {
+                                            namesCol = k;
+                                            break;
+                                        }
+                                        if (k == ce)
+                                            throw new SyntaxError("Неправильный формат загруженного файла:\n\tВ таблице отсутствует столбец содержащий в начале 'Наим':\n" + XLSX.utils.encode_cell({ c: k, r: i }));
+                                    }
+                                    //Try to find "изм"
+                                    for (let k = cs + 2; k <= ce; k++) {
+                                        if (namesCol == k && k != ce)
+                                            continue;
+                                        if (namesCol != k) {
+                                            let mesColCell = ws[XLSX.utils.encode_cell({ c: k, r: i })];
+                                            if (check(mesColCell))
+                                                continue;
+                                            if (/изм/i.test(mesColCell.w)) {
+                                                mesCol = k;
+                                                break;
+                                            }
+                                        }
+                                        if (k == ce)
+                                            throw new SyntaxError("Неправильный формат загруженного файла:\n\tВ таблице отсутствует столбец содержащий 'изм':\n" + XLSX.utils.encode_cell({ c: k, r: i }));
+                                    }
+                                    if (namesCol > mesCol) {
+                                        throw new SyntaxError("Неправильный формат загруженного файла:\n\tСтолбец 'Наименование' в таблице идет после столбца 'Ед. изм.:'\n" + XLSX.utils.encode_cell({ c: namesCol, r: i }));
+                                    }
+                                    //Try to find "Затраты труда рабочих, Средний разряд работы, Затраты труда машинистов"
+                                    let wRow, rankRow, mRow;
+                                    for (let r = i + 1; r <= re; r++) {
+                                        let wRowCell = ws[XLSX.utils.encode_cell({ c: namesCol, r: r })];
+
+                                        let leftCell = ws[XLSX.utils.encode_cell({ c: cs, r: r })];
+                                        if (!check(leftCell)) {
+                                            if (/^\s*Код р/i.test(leftCell.w) || /^\s*Измеритель/i.test(leftCell.w)) {
+                                                break;
+                                            }
+                                        }
+
+                                        if (check(wRowCell))
+                                            continue;
+                                        if (/рабочих/i.test(wRowCell.w)) {
+                                            wRow = r;
+                                            break;
+                                        }
+                                    }
+                                    for (let r = i + 1; r <= re; r++) {
+                                        let rankRowCell = ws[XLSX.utils.encode_cell({ c: namesCol, r: r })];
+
+                                        let leftCell = ws[XLSX.utils.encode_cell({ c: cs, r: r })];
+                                        if (!check(leftCell)) {
+                                            if (/^\s*Код р/i.test(leftCell.w) || /^\s*Измеритель/i.test(leftCell.w)) {
+                                                break;
+                                            }
+                                        }
+
+                                        if (check(rankRowCell))
+                                            continue;
+                                        if (/разряд/i.test(rankRowCell.w)) {
+                                            rankRow = r;
+                                            break;
+                                        }
+                                    }
+                                    for (let r = i + 1; r <= re; r++) {
+                                        let mRowCell = ws[XLSX.utils.encode_cell({ c: namesCol, r: r })];
+
+                                        let leftCell = ws[XLSX.utils.encode_cell({ c: cs, r: r })];
+                                        if (!check(leftCell)) {
+                                            if (/^\s*Код р/i.test(leftCell.w) || /^\s*Измеритель/i.test(leftCell.w)) {
+                                                break;
+                                            }
+                                        }
+
+                                        if (check(mRowCell))
+                                            continue;
+                                        if (/машинистов/i.test(mRowCell.w)) {
+                                            mRow = r;
+                                            break;
+                                        }
+                                    }
+
+                                    //Try to find mechs and mats
+                                    let mechs = [], mats = [];
+                                    let write = false;
+                                    for (let r = i + 1; r <= re; r++) {
+                                        let mechRowCell = ws[XLSX.utils.encode_cell({ c: namesCol, r: r })];
+
+                                        let leftCell = ws[XLSX.utils.encode_cell({ c: cs, r: r })];
+                                        if (!check(leftCell)) {
+                                            if (/ПРИЛОЖЕН/i.test(leftCell.w))
+                                                break;
+                                            if (/^\s*Код р/i.test(leftCell.w) || /^\s*Измеритель/i.test(leftCell.w)) {
+                                                if (r == re)
+                                                    break;
+                                                let nextCell = ws[XLSX.utils.encode_cell({ c: cs, r: r + 1 })];
+                                                //if after choosen cell no next mechs follow:
+                                                if (check(nextCell) || !/\d+-\d+|\d+\.\d+/.test(nextCell.w))
+                                                    break;
+                                                else
+                                                    continue;
+                                            }
+                                        }
+                                        if (check(mechRowCell))
+                                            continue;
+
+                                        if (/МЕХАНИЗМ/i.test(mechRowCell.w) && !write) {
+                                            write = true;
+                                        }
+                                        else if (write && !/МАТЕРИАЛ/i.test(mechRowCell.w)) {
+                                            //if mech places in two cells, its value will be in the first cell, so we can just add a part of name from the second cell to the first
+                                            if (check(leftCell)) {
+                                                if (mechs.length > 0) {
+                                                    let prevLeftCell = ws[XLSX.utils.encode_cell({ c: cs, r: r - 1 })];
+                                                    if (!check(prevLeftCell)) {
+                                                        let prevName = mechs.find(m => m.Code == prevLeftCell.w).Name;
+                                                        if (/^\s/.test(mechRowCell.w) || /\s$/.test(prevName))
+                                                            mechs.find(m => m.Code == prevLeftCell.w).Name += mechRowCell.w;
+                                                        else
+                                                            mechs.find(m => m.Code == prevLeftCell.w).Name += " " + mechRowCell.w;
+                                                        continue;
+                                                    }
+                                                }
+                                                leftCell = {};
+                                            }
+                                            let mech = {
+                                                Name: mechRowCell.w,
+                                                Code: leftCell.w,
+                                                row: r
+                                            };
+                                            mechs.push(mech);
+                                        }
+                                        else if (write && /МАТЕРИАЛ/i.test(mechRowCell.w)) {
+                                            break;
+                                        }
+                                    }
+                                    write = false;
+                                    for (let r = i + 1; r <= re; r++) {
+                                        let matRowCell = ws[XLSX.utils.encode_cell({ c: namesCol, r: r })];
+
+                                        let leftCell = ws[XLSX.utils.encode_cell({ c: cs, r: r })];
+                                        if (!check(leftCell)) {
+                                            if (/ПРИЛОЖЕН/i.test(leftCell.w))
+                                                break;
+                                            if (/^\s*Код р/i.test(leftCell.w) || /^\s*Измеритель/i.test(leftCell.w)) {
+                                                if (r == re)
+                                                    break;
+                                                let nextCell = ws[XLSX.utils.encode_cell({ c: cs, r: r + 1 })];
+                                                //if after choosen cell no next mats follow:
+                                                if (check(nextCell) || !/\d+-\d+|\d+\.\d+/.test(nextCell.w))
+                                                    break;
+                                                else
+                                                    continue;
+                                            }
+                                        }
+                                        if (check(matRowCell))
+                                            continue;
+
+                                        if (/МАТЕРИАЛ/i.test(matRowCell.w) && !write) {
+                                            write = true;
+                                        }
+                                        else if (write && !/МЕХАНИЗМ/i.test(matRowCell.w)) {
+                                            //if mat places in two cells, its value will be in the first cell, so we can just add a part of name from the second cell to the first
+                                            if (check(leftCell)) {
+                                                if (mats.length > 0) {
+                                                    let prevLeftCell = ws[XLSX.utils.encode_cell({ c: cs, r: r - 1 })];
+                                                    if (!check(prevLeftCell)) {
+                                                        let prevName = mats.find(m => m.Code == prevLeftCell.w).Name;
+                                                        if (/^\s/.test(matRowCell.w) || /\s$/.test(prevName))
+                                                            mats.find(m => m.Code == prevLeftCell.w).Name += matRowCell.w;
+                                                        else
+                                                            mats.find(m => m.Code == prevLeftCell.w).Name += " " + matRowCell.w;
+                                                        continue;
+                                                    }
+                                                }
+
+                                                leftCell = {};
+                                            }
+
+                                            let unitsCell = ws[XLSX.utils.encode_cell({ c: mesCol, r: r })];
+                                            if (check(unitsCell))
+                                                unitsCell = {};
+
+                                            let mat = {
+                                                Name: matRowCell.w,
+                                                Code: leftCell.w,
+                                                Units: unitsCell.w,
+                                                row: r
+                                            };
+                                            mats.push(mat);
+                                        }
+                                        else if (write && /МЕХАНИЗМ/i.test(matRowCell.w)) {
+                                            break;
+                                        }
+                                    }
+
+                                    //Filling items:
+                                    for (let c = mesCol + 1; c <= ce; c++) {
+                                        let codeCell = ws[XLSX.utils.encode_cell({ c: c, r: i })];
+                                        if (check(codeCell))
+                                            break;
+
+                                        let code = codeCell.w.match(/\S+/)[0];
+
+                                        let item = m.find((item) => item.Code == code ? true : false);
+
+                                        //If item doesn't exist, create part of it to fill manually
+                                        if (item === undefined) {
+                                            item = { Code: code };
+                                            m.push(item);
+                                        }
+
+
+                                        for (let r of [[wRow, "WLaborCosts"], [rankRow, "AvRank"], [mRow, "MLaborCosts"]]) {
+                                            if (r[0] == undefined)
+                                                continue;
+
+                                            let cell = ws[XLSX.utils.encode_cell({ c: c, r: r[0] })];
+                                            if (check(cell))
+                                                continue;
+
+                                            item[r[1]] = cell.w;
+                                        }
+
+                                        if (item.Mechs === undefined)
+                                            item.Mechs = [];
+                                        if (item.Mats === undefined)
+                                            item.Mats = [];
+
+                                        for (let mech of mechs) {
+                                            let cell = ws[XLSX.utils.encode_cell({ c: c, r: mech.row })];
+                                            if (check(cell)||cell.w=="-")
+                                                continue;
+
+                                            let newMech = {
+                                                Name: mech.Name,
+                                                Code: mech.Code,
+                                                Amount: cell.w
+                                            };
+                                            item.Mechs.push(newMech);
+                                        }
+
+
+                                        for (let mat of mats) {
+                                            let cell = ws[XLSX.utils.encode_cell({ c: c, r: mat.row })];
+                                            if (check(cell)||cell.w=="-")
+                                                continue;
+
+                                            let newMat = {
+                                                Name: mat.Name,
+                                                Code: mat.Code,
+                                                Units: mat.Units,
+                                                Amount: cell.w
+                                            };
+                                            item.Mats.push(newMat);
+                                        }
+                                    }
+                                }
+                                //Parse only when choosen cell is "Код р"
+                                for (i -= 1; i < re; i++) {
+                                    cell = ws[XLSX.utils.encode_cell({ c: cs, r: i + 1 })];
+                                    if (check(cell))
+                                        continue;
+                                    if (/^\s*Код р/i.test(cell.w)) {
+                                        let nextCell = ws[XLSX.utils.encode_cell({ c: cs, r: i + 2 })];
+                                        if (check(nextCell) || !/\d+-\d+|\d+\.\d+/.test(nextCell.w)) {
+                                            i++;
+                                            parseTable();
+                                        }
+                                    }
+                                    if (/^\s*Измеритель/.test(cell.w)) {
+                                        break;
+                                    }
+                                }
+                            }
+
+                        }
+
+                        if (m.length == 0)
+                            cs++;
+                    }
+                }
+                catch (e) {
+                    if (e.name == "SyntaxError")
+                        alert("Произошла ошибка:\n" + e.message);
+                    else
+                        throw e;
+                }
+
+            }
+
+            fillTable(m);
+            return true;
+        }
+        return false;
+    }
+
+    function woParsing() {
+        fillTable([]);
+    }
+
+    function fillTable(m) {
+        let mechs = [], mats = [], jobs = [];
+
+        //if a field of job is undefined, make it empty:
+        for (let i of m) {
+            for (let f of ["Name", "Type", "Code", "Producer", "Measurer", "Units", "Amount", "Mass", "Note", "WLaborCosts", "MLaborCosts", "AvRank"]) {
+                if (i[f] === undefined||i[f]==null) {
+                    i[f] = "";
+                }
+            }
+            for (let f of ["Mechs", "Mats"]) {
+                if (i[f] === undefined||i[f]==null) {
+                    i[f] = [];
+                }
+            }
+            //Also save all job's names+types to send it for checking that they don't exist:
+            jobs.push([i.Name,i.Type]);
+            for (let mech of i.Mechs) {
+                for (let f of ["Amount", "Code", "Name"]) {
+                    if (mech[f] === undefined||mech[f]==null) {
+                        mech[f] = "";
+                    }
+                }
+                //Also save all mech's names to send it for checking their existing in prices:
+                mechs.push(mech.Name);
+            }
+            for (let mat of i.Mats) {
+                for (let f of ["Amount", "Code", "Name", "Units"]) {
+                    if (mat[f] === undefined||mat[f]==null) {
+                        mat[f] = "";
+                    }
+                }
+                //Also save all mat's names to send it for checking their existing in prices:
+                mats.push(mat.Name);
+            }
+        }
+        addJobs(m);
+        checkMechs(mechs);
+        checkMats(mats);
+        checkJobs(jobs);
+
+        //binding of onChange events:
+        onChangeEvents();
+    }
+
+    function checkMechs(ms,start=0) {
+        if (ms.length > 0) {
+            resetCheckMechsForm();
+            ms.forEach(m => addMechName(m));
+
+            checkResMechWithStart(start);
+            submitCheckMechsForm();
+        }
+    }
+
+    function checkMats(ms,start=0) {
+        if (ms.length > 0) {
+            resetCheckMatsForm();
+            ms.forEach(m => addMatName(m));
+
+            checkResMatWithStart(start);
+            submitCheckMatsForm();
+        }
+    }
+
+    function checkJobs(js) {
+        if (js.length > 0) {
+            js.forEach(j => addJobNameType(j));
+            submitCheckJobsForm();
+        }
+    }
+
+    function onChangeEvents() {
+        //ajax search functions
+        function deleteOnFocus(id) {
+            return ()=>$(id).remove();
+        }
+
+        let matd = deleteOnFocus("#resultsMat");
+        let mechd = deleteOnFocus("#resultsMech");
+        //mech-names and amounts can't be empty
+        $("#table").on("input","[data-type='mech-name']>div",function (e) {
+            let t = $(e.target);
+            if (t.text() == "") {
+                emptyMechName(t.closest("tr").children("[data-type='info']"));
+                //ajax-search
+                $("#resultsMech").remove();
+                $(":not(#resultsMech)").not(t).off("focus", mechd);
+            }
+            else {
+                emptyMechNameRemove(t.closest("tr").children("[data-type='info']"));
+                //ajax-search
+                if ($("#resultsMech").length == 0)
+                    t.closest("td").append("<span id='resultsMech'></span>");
+                currentMech = t;
+                findMechName(t.text());
+                $(":not(#resultsMech)").not(t).one("focus", mechd);
+            }
+        });
+
+        $("#table").on("input","[data-type='mech-amount']>div",function (e) {
+            let t = $(e.target);
+            if (t.text() == "") {
+                emptyMechAmount(t.closest("tr").children("[data-type='info']"));
+
+            }
+            else {
+                emptyMechAmountRemove(t.closest("tr").children("[data-type='info']"));
+            }
+        });
+
+        //mat-names, amounts and units can't be empty
+        $("#table").on("input","[data-type='mat-name']>div",function (e) {
+            let t = $(e.target);
+            if (t.text() == "") {
+                emptyMatName(t.closest("tr").children("[data-type='info']"));
+                //ajax-search
+                $("#resultsMat").remove();
+                $(":not(#resultsMat)").not(t).off("focus", matd);
+            }
+            else {
+                emptyMatNameRemove(t.closest("tr").children("[data-type='info']"));
+                //ajax-search
+                if ($("#resultsMat").length == 0)
+                    t.closest("td").append("<span id='resultsMat'></span>");
+                currentMat = t;
+                findMatName(t.text());
+                $(":not(#resultsMat)").not(t).one("focus", matd);
+            }
+        });
+
+        $("#table").on("input","[data-type='mat-amount']>div",function (e) {
+            let t = $(e.target);
+            if (t.text() == "") {
+                emptyMatAmount(t.closest("tr").children("[data-type='info']"));
+
+            }
+            else {
+                emptyMatAmountRemove(t.closest("tr").children("[data-type='info']"));
+            }
+        });
+
+        $("#table").on("input","[data-type='mat-units']>div",function (e) {
+            let t = $(e.target);
+            if (t.text() == "") {
+                emptyMatUnits(t.closest("tr").children("[data-type='info']"));
+            }
+            else {
+                emptyMatUnitsRemove(t.closest("tr").children("[data-type='info']"));
+            }
+        });
+
+        //job's names can't be short or empty
+        $("#table").on("input","[data-type='name']>div,[data-type='type']>div",function (e) {
+            let t = $(e.target);
+            if (t.text() == "") {
+                emptyJobName(t);
+                shortJobNameRemove(t);
+            }
+            else if (t.text().length < 5) {
+                shortJobName(t);
+                emptyJobNameRemove(t);
+                //ajax checking (without hints)
+                addJobNameEl(t);
+                submitCheckJobsForm();
+            }
+            else {
+                emptyJobNameRemove(t);
+                shortJobNameRemove(t);
+                //ajax checking (without hints)
+                addJobNameEl(t);
+                submitCheckJobsForm();
+            }
+        });
+    }
+    //Utility cell's functions
+    function check(cell) {
+        return cell === undefined || cell.w === undefined || cell.w == "";
+    };
+
+
+    //Save results button
+    $("#saveresults").click(function () {
+        let save = confirm("Сохранить изменения?");
+        if (save) {
+            if (ableToSave()) {
+                //add jobs+add mats/mechs
+                let jobs = $("#table").find("tr.job:not(.deleted)");
+
+                addJobsDB(jobs);
+            }
+            else {
+                saveUnable();
+            }
+        }
+    });
+
+    function ableToSave() {
+        let infos = $("[data-type='info']").children("li");
+        let invres = false;
+        if ($("#noprice").prop("checked")) {
+            for (let cl of ["mech-name-empty", "mech-amount-empty", "mat-name-empty", "mat-amount-empty", "mat-units-empty", "name", "name-empty"])
+                invres = invres || infos.hasClass(cl);
+        }
+        else {
+            for (let cl of ["mat-name", "mech-name", "mech-name-empty", "mech-amount-empty", "mat-name-empty", "mat-amount-empty", "mat-units-empty", "name", "name-empty"])
+                invres = invres || infos.hasClass(cl);
+        }
+        return !invres;
+    }
+    function saveUnable() {
+        alert("Добавление невозможно, введенны некорректные данные.");
+    }
+
+    //hidden form's functions:
+    function addJobsDB(j) {
+        if (j.length > 0) {
+            resetForm();
+            try {
+                j.each(function (i, el) {
+                    let job = $(el);
+
+                    //[Filling form]
+                    for (let i of ["Name", "Type", "Code", "Producer", "Measurer", "Units", "Amount", "Mass", "Note"])
+                        jFillAdd(job, i);
+                    //WLaborCosts tr
+                    let tr = job.next("tr");
+                    jFillAdd(tr, "WLaborCosts");
+                    //AvRank
+                    tr = tr.next("tr");
+                    jFillAdd(tr, "AvRank");
+                    //MLaborCosts
+                    tr = tr.next("tr");
+                    jFillAdd(tr, "MLaborCosts");
+
+                    resetMechsMats();
+
+                    let ms = tr.nextUntil(".job").toArray();
+                    for (let m of ms) {
+                        tr = $(m);
+                        if (tr.hasClass("mat") && !tr.hasClass("deleted")) {
+                            let name = tr.find("[data-type='mat-name']"),
+                                amount = tr.find("[data-type='mat-amount']"),
+                                units = tr.find("[data-type='mat-units']");
+
+                            [name, amount, units] = [name, amount, units].map(function (n) {
+                                if (n.children("div").length > 0 )
+                                    return n.children("div").text();
+                                else
+                                    return n.text();
+                            });
+
+                            addMat(name, amount, units);
+                        }
+                        else if (tr.hasClass("mech") && !tr.hasClass("deleted")) {
+                            let name = tr.find("[data-type='mech-name']"),
+                                amount = tr.find("[data-type='mech-amount']");
+
+                            [name, amount] = [name, amount].map(function (n) {
+                                if (n.children("div").length > 0 )
+                                    return n.children("div").text();
+                                else
+                                    return n.text();
+                            });
+                            addMech( name, amount);
+                        }
+                    }
+
+                    addToArray(i);
+                });
+                $("#add-job").children("form").submit();
+            }
+            catch (e) {
+                if (e.name == "SyntaxError")
+                    alert("Некорректные данные:\n" + e.message);
+                else
+                    throw e;
+            }
+        }
+    }
+
+
+    function jFillAdd(job, t) {
+        let form = $("#add-job").children("form");
+        let e = $(job).find("[data-type='"+t.toLowerCase()+"']");
+        if (e.children("div").length > 0)
+            e = e.children("div");
+        form.append('<input type="text" name="'+t+'" value="'+e.text()+'" />');
+    }
+
+
+    //binding function
+    function bindMatNames() {
+        let str = '@using (Ajax.BeginForm("BindName", "MatNameMap", new AjaxOptions { OnSuccess="afterBind" })){<div style="float:left;margin-right:20px;"><label class="label-input" for="newname">Добавить:</label><input autocomplete="off" class="label-input" type="text" name="New" id="newname"/></div><div style="float:left;margin-right:20px;"><label class="label-input" for="oldname">Найти:</label><input autocomplete="off" class="label-input" type="text" name="Old" id="oldname"/></div><div style="float:left;margin-right:20px;"><input type="submit" style="margin-top:25px;" value="Добавить"/></div>}';
+        return '<div class="inlbl"><h2>Привязать новое наименование материала</h2></div><div class="inlbl">' + str + '</div>';
+    }
+    function bindMechNames() {
+        let str = '@using (Ajax.BeginForm("BindName", "MechNameMap", new AjaxOptions { OnSuccess="afterBind" })){<div style="float:left;margin-right:20px;"><label class="label-input" for="newname">Добавить:</label><input autocomplete="off" class="label-input" type="text" name="New" id="newname"/></div><div style="float:left;margin-right:20px;"><label class="label-input" for="oldname">Найти:</label><input autocomplete="off" class="label-input" type="text" name="Old" id="oldname"/></div><div style="float:left;margin-right:20px;"><input type="submit" style="margin-top:25px;" value="Добавить"/></div>}';
+        return '<div class="inlbl"><h2>Привязать новое наименование механизма</h2></div><div class="inlbl">' + str + '</div>';
+    }
+    function afterBind(data) {
+        $("#bindres").remove();
+        $("#float-field").append("<div id='bindres'><h3>" + data + "</h3></div>");
+    }
+    //info's cell functions:
+    //basic:
+    function addInfo(el, type, info) {
+        if (el.children("li."+type).length == 0)
+            el.append("<li class=" + type + ">" + info + "</li>");
+    }
+
+    function addJobInfo(el, type, info) {
+        let jobInfo = el.closest("tr").hasClass("job") ? el.closest("tr").children("[data-type='info']") : el.closest("tr").prevAll(".job").first().children("[data-type='info']");
+        if (jobInfo.children("li." + type).length == 0)
+            jobInfo.append("<li class=" + type + ">" + info + "</li>");
+    }
+
+    function removeInfo(el, type) {
+        if (el.children("li." + type).length > 0)
+            el.children("li." + type).remove();
+    }
+
+    function removeJobInfo(el, type) {
+        let jobInfo = el.closest("tr").hasClass("job") ? el.closest("tr").children("[data-type='info']") : el.closest("tr").prevAll(".job").first().children("[data-type='info']");
+        if (jobInfo.children("li." + type).length > 0)
+            jobInfo.children("li." + type).remove();
+    }
+    //combined:
+    function noMat(i) {
+        addInfo(i, "mat-name", "Данного наименования не найдено в прайс листах.");
+        addJobInfo(i, "mat-name", "Не найдено наименования одного из материалов.");
+    }
+    function noMatRemove(i) {
+        removeInfo(i, "mat-name");
+        removeJobInfo(i, "mat-name");
+    }
+
+
+    function noMech(i) {
+        addInfo(i, "mech-name", "Данного наименования не найдено в прайс листах.");
+        addJobInfo(i, "mech-name", "Не найдено наименования одного из механизмов.");
+    }
+    function noMechRemove(i) {
+        removeInfo(i, "mech-name");
+        removeJobInfo(i, "mech-name");
+    }
+
+
+    function emptyMechName(i) {
+        addInfo(i, "mech-name-empty", "Отсутствует наименование.");
+        addJobInfo(i, "mech-name-empty", "У одного из механизмов отсутствует наименование.");
+    }
+    function emptyMechNameRemove(i) {
+        removeInfo(i, "mech-name-empty");
+        removeJobInfo(i, "mech-name-empty");
+    }
+
+
+    function emptyMechAmount(i) {
+        addInfo(i, "mech-amount-empty", "Отсутствует кол-во.");
+        addJobInfo(i, "mech-amount-empty", "У одного из механизмов отсутствует кол-во.");
+    }
+    function emptyMechAmountRemove(i) {
+        removeInfo(i, "mech-amount-empty");
+        removeJobInfo(i, "mech-amount-empty");
+    }
+
+
+    function emptyMatName(i) {
+        addInfo(i, "mat-name-empty", "Отсутствует наименование.");
+        addJobInfo(i, "mat-name-empty", "У одного из материалов отсутствует наименование.");
+    }
+    function emptyMatNameRemove(i) {
+        removeInfo(i, "mat-name-empty");
+        removeJobInfo(i, "mat-name-empty");
+    }
+
+
+    function emptyMatAmount(i) {
+        addInfo(i, "mat-amount-empty", "Отсутствует кол-во.");
+        addJobInfo(i, "mat-amount-empty", "У одного из материалов отсутствует кол-во.");
+    }
+    function emptyMatAmountRemove(i) {
+        removeInfo(i, "mat-amount-empty");
+        removeJobInfo(i, "mat-amount-empty");
+    }
+
+
+    function emptyMatUnits(i) {
+        addInfo(i, "mat-units-empty", "Отсутствует кол-во.");
+        addJobInfo(i, "mat-units-empty", "У одного из механизмов отсутствует кол-во.");
+    }
+    function emptyMatUnitsRemove(i) {
+        removeInfo(i, "mat-units-empty");
+        removeJobInfo(i, "mat-units-empty");
+    }
+
+
+    function nameUsing(i) {
+        addJobInfo(i, "name", "Данное наименование уже используется.");
+    }
+    function nameUsingRemove(i) {
+        removeJobInfo(i, "name");
+    }
+
+    function emptyJobName(i) {
+        addJobInfo(i, "name-empty", "Наименование работы не должно быть пустым");
+    }
+    function emptyJobNameRemove(i) {
+        removeJobInfo(i, "name-empty");
+    }
+
+    //ignore
+    function shortJobName(i) {
+        addJobInfo(i, "name-short", "Короткое наименование работы");
+    }
+    function shortJobNameRemove(i) {
+        removeJobInfo(i, "name-short");
+    }
+</script>
+<script>
+    //Utility functions
+    function isNum(n) {
+        return !isNaN(+n) && isFinite(n)
+    }
+    //Add closeable float div to page, that append f's result:
+    function floatField(f) {
+        let fl = $("<div class='float-field' id='float-field'><input type='button' value='X' class='button-close' onclick='$(`#float-field`).remove();'/></div> ");
+        fl.append(f());
+        $("body").append(fl);
+    }
+</script>

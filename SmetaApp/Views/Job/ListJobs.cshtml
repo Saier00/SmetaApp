@@ -1,0 +1,118 @@
+﻿@using System.Linq;
+<script lang="javascript" src="~/Scripts/xlsx.full.min.js"></script>
+<script lang="javascript" src="~/Scripts/FileSaver.min.js"></script>
+
+@{
+    ViewBag.Title = "ListJobs";
+}
+
+<!--PageStart-->
+<h2>UDJobs</h2>
+
+<input type="button" class="button-open" value="Найти работу" onclick="$('#find-job').show(); $('#find-job-show').hide();" id="find-job-show" hidden/>
+<div class="find-job" id="find-job">
+    <input type="button" class="button-delete" value="X" onclick="$('#find-job').hide(); $('#find-job-show').show();" style="float:left;margin-right:20px;margin-top:20px;"/>
+    <h3>Поиск работы:</h3>
+    @foreach (string[] s in new string[5][] { new string[] { "Name", "Наименование" }, new string[] { "Type", "Тип" }, new string[] { "Code", "Код" }, new string[] { "Mat", "Материал" }, new string[] { "Mech", "Механизм" } })
+    {
+        <div class="find-@s[0].ToLower()" style="float:left;margin-right:20px;">
+            <div><label for="find-@s[0].ToLower()">@s[1]:</label></div>
+            <div>
+                @using (Ajax.BeginForm("FindJobBy" + s[0] + "Partial", new AjaxOptions { UpdateTargetId = "results-" + s[0].ToLower() }))
+                {
+                    <input type="text" class="find-job-by-@s[0].ToLower()" name="@s[0]" placeholder="@s[1]" autocomplete="off" id="find-@s[0].ToLower()" />
+                    foreach (string str in new string[5] { "Name", "Type", "Code", "Mat", "Mech" }.Where(v => v != s[0]))
+                    {
+                        <input type="text" hidden name="@str" />
+                    }
+                }
+                <span id="results-@s[0].ToLower()"></span>
+            </div>
+        </div>
+    }
+
+    <div style="float:left;margin-right:20px;" id="find-job-form">
+        @using (Ajax.BeginForm("FindJobPartial", new AjaxOptions { UpdateTargetId = "results" }))
+        {
+            <input type="text" hidden name="Name" />
+            <input type="text" hidden name="Type" />
+            <input type="text" hidden name="Code" />
+            <input type="text" hidden name="Mat" />
+            <input type="text" hidden name="Mech" />
+            <input type="submit" value="Найти" style="margin-top:25px;" />
+        }
+    </div>
+
+    <div id="results" class="search-results"></div>
+</div>
+
+<div>
+    <table id="table" hidden>
+    </table>
+</div>
+
+<input type="button" value="Скачать документ" onclick="download();" />
+<!--PageEnd-->
+@{Html.RenderPartial("ListJobs/JobListTablePartial");}
+<script>
+    //ajax search
+    function hideOnFocus(id) {
+        return () => $(id).hide();
+    }
+
+
+    for (let s of ["name", "type", "code", "mat", "mech"]) {
+        $("#find-" + s).bind("input", function () {
+            let t = $(this);
+            UpVals(t);
+            if (t.val() != "") {
+                t.closest("form").submit();
+                $("#results-" + s).show();
+                $(":not(#results-" + s + ")").not(t).one("focus", hideOnFocus("#results-" + s));
+            }
+            else {
+                $("#results-name").hide();
+                $(":not(#results-" + s + ")").not(t).off("focus", hideOnFocus("#results-" + s));
+            }
+        });
+    }
+
+    function UpVals(t) {
+        let tform = t.closest("form");
+
+        let jform = $("#find-job-form").find("form");
+
+        let inps = ["Name", "Type", "Code", "Mat", "Mech"];
+
+        inps.splice(inps.indexOf(t.attr("name").replace(/^\w/, c => c.toUpperCase())), 1);
+        for (let inp of inps) {
+            tform.find("input[name='" + inp + "']").val(jform.find("input[name='" + inp + "']").val());
+        }
+
+        jform.find("input[name='" + t.attr("name").replace(/^\w/, c => c.toUpperCase()) + "']").val(tform.find("input[name='" + t.attr("name").replace(/^\w/, c => c.toUpperCase()) + "']").val());
+    }
+
+    
+    function download() {
+        var wb = XLSX.utils.table_to_book(document.getElementById('table'));
+
+        /* write workbook (use type 'binary') */
+        var wbout = XLSX.write(wb, {bookType:'xlsx', type:'binary'});
+
+        /* generate a download */
+        function s2ab(s) {
+            var buf = new ArrayBuffer(s.length);
+            var view = new Uint8Array(buf);
+            for (var i=0; i!=s.length; ++i) view[i] = s.charCodeAt(i) & 0xFF;
+            return buf;
+        }
+
+        saveAs(new Blob([s2ab(wbout)],{type:"application/octet-stream"}), "sheetjs.xlsx");
+    }
+</script>
+<script>
+    //Utility functions
+    function isNum(n) {
+        return !isNaN(+n) && isFinite(n)
+    }
+</script>

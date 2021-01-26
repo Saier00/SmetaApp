@@ -1,0 +1,75 @@
+﻿@model List<SmetaApp.Models.Job>
+@using Newtonsoft.Json;
+
+<div class="result-space-jobs">
+    <table class="table">
+        <tr>
+            <th>
+                Наименование
+            </th>
+            <th>
+                Тип
+            </th>
+            <th>
+                Код
+            </th>
+            @if (ViewBag.noMat != true)
+            {
+                <th>
+                    Материалы
+                </th>
+            }
+
+            @if (ViewBag.noMech != true)
+            {
+                <th>
+                    Механизмы
+                </th>
+            }
+            <th>
+
+            </th>
+        </tr>
+        @{
+            var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+        }
+
+        @foreach (var j in Model)
+        {
+            <tr data-job="@JsonConvert.SerializeObject(j)">
+                <td>
+                    @j.Name
+                </td>
+                <td>
+                    @j.Type
+                </td>
+                <td>
+                    @j.Code
+                </td>
+                @if (ViewBag.noMat != true)
+                {
+                    <td>
+                        @("{" + string.Join(", ", j.Mats.Select(m => m.Name)) + "}")
+                    </td>
+                }
+                @if (ViewBag.noMech != true)
+                {
+                    <td>
+                        @("{" + string.Join(", ", j.Mechs.Select(m => m.Name)) + "}")
+                    </td>
+                }
+                <td>
+                    <input type="button" class="button-add" onclick="addJob(JSON.parse($(this).closest('tr').attr('data-job')));" />
+                </td>
+            </tr>
+        }
+        @if (Model.Any() == false)
+        {
+            <tr>
+                <td colspan="3">
+                    <h2>По данному запросу ничего не найдено.</h2>
+                </td>
+            </tr>
+        }
+    </table>
+</div>

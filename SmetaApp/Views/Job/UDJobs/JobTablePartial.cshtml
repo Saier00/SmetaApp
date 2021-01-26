@@ -1,0 +1,496 @@
+﻿@model PagedList.IPagedList<SmetaApp.Models.Job>
+<script>
+    $("#table").addThs("<input type='button' class='jobs-open button-open' value='>'>", "№ п/п", "Наименование и техническая характеристика", "Тип, марка", "Код оборудования", "Завод - изготовитель",
+        "Измеритель", "Ед. изм.", "Кол-во", "Масса единицы, кг", "Примечание", 3, "Стоимость за единицу (руб.), в т.ч. НДС 20%",
+        3, "Стоимость всего (руб.), в т.ч. НДС 20%", "прайс, евро", "прайс, долл", "скидка поставщика", "с/с оборудования, рублей",
+        "НАЦЕНКА", "Повышающие коэффициенты", "Повышающие коэффициенты", "Цена поставщика", "прайс, евро", "прайс, долл", "скидка поставщика",
+        "с/с оборудования, рублей", "НАЦЕНКА", "Повышающие коэффициенты", "Повышающие коэффициенты", "Цена поставщика", "с/с оборудования, рублей",
+        "НАЦЕНКА", "Повышающие коэффициенты", "Повышающие коэффициенты", "ЦЕНА СОГЛАСНО ЛИСТУ МРОТ")
+        .addThs("<input type='button' class='jobs-open button-open' value='>'>", "№ п/п", "Наименование и техническая характеристика", "Тип, марка", "Код оборудования", "Завод - изготовитель", "Измеритель",
+            "Ед. изм.", "Кол-во", "Масса единицы, кг", "Примечание", "Стоимость оборудования и материалов, руб.", "Стоимость монтажных работ, руб/час.",
+            "Всего, руб.", "Стоимость оборудования и материалов, руб.", "Стоимость монтажных работ, руб/час.", "Всего, руб.", "прайс, евро", "прайс, долл", "скидка поставщика",
+            "с/с оборудования, рублей", "НАЦЕНКА", "0,1", "0,9", "Цена поставщика", "прайс, евро", "прайс, долл", "скидка поставщика", "с/с оборудования, рублей",
+            "НАЦЕНКА", "0,1", "0,9", "Цена поставщика", "с/с оборудования, рублей", "НАЦЕНКА", "0,1", "0,9", "ЦЕНА СОГЛАСНО ЛИСТУ МРОТ")
+        .rowspanizer({ vertical_align: 'middle' });
+</script>
+
+@{int j = 1;}
+@foreach (var item in Model)
+{
+    <script>
+        //Add jobs
+        $("#table").addTds(
+            "<div hidden>@item.Id</div><input type='button' class='job" +@j+"-open button-open' value='>'><input type='button' class='job" +@j+"-delete button-delete' value='X'>",
+            "@(j + (Model.PageNumber - 1) * Model.PageSize)",
+            "@item.Name",
+            "@item.Type",
+            "@item.Code",
+            "@item.Producer",
+            "@item.Measurer",
+            "@item.Units",
+            "@item.Amount",
+            "@item.Mass",
+            "@item.Note"
+        )
+        .trAddCl("job" +@j,"job")
+            .tdsAddDType(
+            "id",
+            1,
+            "name",
+            "type",
+            "code",
+            "producer",
+            "measurer",
+            "units",
+            "amount",
+            "mass",
+            "note"
+        )
+        .addTds(
+            1,
+            "Затраты труда рабочих",
+            4,
+            "чел.-ч",
+            "@item.WLaborCosts"
+        )
+        .trAddCl("job" +@j+"-hide")
+        .tdsAddDType(
+            7,
+            "wlaborcosts"
+        )
+        .addTds(
+            1,
+            "Средний разряд работы",
+            5,
+            "@item.AvRank"
+        )
+
+        .trAddCl("job" +@j+"-hide")
+        .tdsAddDType(
+            7,
+            "avrank"
+        )
+        .addTds(
+            1,
+            "Затраты труда машинистов",
+            4,
+            "чел.-ч",
+            "@item.MLaborCosts"
+        )
+        .trAddCl("job" +@j+"-hide")
+        .tdsAddDType(
+            7,
+            "mlaborcosts"
+        );
+
+        $("#table").addTds(
+            "<input type='button' class='job" +@j+"-mech-add button-add' value='+'/>",
+            "МАШИНЫ И МЕХАНИЗМЫ"
+        )
+        .trAddCl("job" +@j+"-hide","mechs");
+    </script>
+    //Add mechs
+    if (item.Mechs != null)
+    {
+
+        foreach (var mech in item.Mechs)
+        {
+            <script>
+            @{
+                var price = mech.MechNameMap.MechPrice??new SmetaApp.Models.MechPrice();
+                /*
+                var aprice=mech.AlterMechPrice;
+                bool outPrice = false;
+
+                if (aprice!=null&&(aprice.Dol != null || aprice.Eur != null || aprice.Rub != null))
+                {
+                    outPrice = true;
+                }
+                */
+            }
+
+
+            $("#table").addTds(
+                "<input type='button' class='job" +@j+"-mech"+"@mech.MechId"+"-delete button-delete' value='X'>",
+                "@mech.MechId",
+                "@mech.Name",
+                4,
+                "маш.-ч",
+                "@mech.Amount",
+                8,
+                "@price.Eur",
+                "@price.Dol",
+                "@price.Discount",
+                4,
+                "@price.Rub"
+            )
+            .trAddCl("job" +@j+"-hide","mech"+@mech.MechId,"mech")
+            .tdsAddDType(
+                1,
+                "mech-id",
+                "mech-name",
+                5,
+                "mech-amount",
+                8,
+                "mech-eur",
+                "mech-dol",
+                "mech-discount",
+                4,
+                "mech-rub"
+                );
+
+                /*
+                if ("outPrice" == "True") {
+                    $("#table").find("tr").last().find("[data-type='mech-eur']:not(:empty),[data-type='mech-dol']:not(:empty),[data-type='mech-rub']:not(:empty)").addClass("outPrice");
+                }
+                */
+            </script>
+        }
+    }
+    <script>
+        $("#table").addTds(
+            "<input type='button' class='job" +@j+"-mat-add button-add' value='+'>",
+            "МАТЕРИАЛЫ"
+        )
+        .trAddCl("job" +@j+"-hide","mats");
+    </script>
+    //Add mats
+    if (item.Mats != null)
+    {
+
+        foreach (var mat in item.Mats)
+        {
+            <script>
+            @{
+                var price = mat.MatNameMap.MatPrice??new SmetaApp.Models.MatPrice();
+                /*
+                var aprice=mat.AlterMatPrice;
+                bool outPrice = false;
+                if (aprice!=null&&(aprice.Dol != null || aprice.Eur != null || aprice.Rub != null))
+                {
+                    outPrice = true;
+                }
+                also change all prices to ((outPrice == true)?aprice.Eur:price.Eur)
+                */
+            }
+
+
+            $("#table").addTds(
+                "<input type='button' class='job" +@j+"-mat"+"@mat.MatId"+"-delete button-delete' value='X'>",
+                "@mat.MatId",
+                "@mat.Name",
+                4,
+                "@mat.Units",
+                "@mat.Amount",
+                16,
+                "@price.Eur",
+                "@price.Dol",
+                "@price.Discount",
+                2,
+                2,
+                "@price.Rub"
+            )
+            .trAddCl("job" +@j+"-hide","mat"+@mat.MatId,"mat")
+            .tdsAddDType(
+                1,
+                "mat-id",
+                "mat-name",
+                4,
+                "mat-units",
+                "mat-amount",
+                16,
+                "mat-eur",
+                "mat-dol",
+                "mat-discount",
+                2,
+                2,
+                "mat-rub"
+                );
+                /*
+                if ("outPrice" == "True") {
+                    let a = $("#table").find("tr").last().find("[data-type='mat-eur']:not(:empty),[data-type='mat-dol']:not(:empty),[data-type='mat-rub']:not(:empty)").addClass("outPrice");
+                }
+                */
+            </script>
+        }
+    }
+    j++;
+}
+
+<!--Add styles-->
+<!--Hide/view job's content-->
+<!--Open/delete job-->
+@{
+    string hide = "";
+}
+@for (int i = 1; i <= Model.PageSize; i++)
+{
+    <script>
+    @{
+        hide +=".job" +i+"-hide";
+        if (i != Model.PageSize)
+        {
+            hide +=",";
+        }
+    }
+        $(".job" +@i +"-open").click(function () {
+            let jrows = $(".job" +@i+"-hide,.job" +@i+"-show");
+            jrows.toggleClass("job" +@i+"-hide");
+            jrows.toggleClass("job" +@i+"-show");
+        });
+
+        $(".job" +@i +"-delete").click(function () {
+            let jAndRows = $(".job" +@i+",.job" +@i+"-hide,.job" +@i+"-show");
+            jAndRows.toggleClass("deleted");
+        });
+
+        $(".jobs-open").one("click",function cl() {
+            let jrows = $(".job" +@i+"-hide,.job" +@i+"-show");
+            jrows.addClass("job" +@i+"-show");
+            jrows.removeClass("job" +@i+"-hide");
+            $(this).one("click", function () {
+                let jrows = $(".job" +@i+"-hide,.job" +@i+"-show");
+                jrows.removeClass("job" +@i+"-show");
+                jrows.addClass("job" +@i+"-hide");
+                $(this).one("click", cl);
+            });
+        });
+    </script>
+}
+
+<script>
+    $("[class*='button-open']:not(.jobs-open)").click(function () {
+        let t = $(this);
+        if (t.val() == ">")
+            t.val("V");
+        else
+            t.val(">");
+    });
+    $(".jobs-open").click(function () {
+        let t = $(this);
+        if (t.val() == ">") {
+            $("[class$='-open'],[class*='-open ']").val("V");
+        }
+        else {
+            $("[class$='-open'],[class*='-open ']").val(">");
+        }
+    });
+
+    $("<style>" + "@hide" + "{ display: none; }</style>").appendTo('head');
+</script>
+
+<script>
+    $(".button-add[class*='mech']").click(function () {
+        let jnum = this.className.match(/job\d+-mech-add/)[0].match(/\d+/)[0];
+        if (jnum != null)
+            jnum = jnum[0];
+
+        let tr = $(this).closest("tr").nextUntil(".mats,.job").last();
+        tr = tr.length ? tr : $(this).closest("tr");
+        tr.addTdsAt("<input type='button' class='job" + jnum + "-mechNew" + "-delete button-delete' value='X'>");
+
+        tr = $(this).closest("tr").nextUntil(".mats,.job").last();
+        tr = tr.length ? tr : $(this).closest("tr");
+        tr.trAddClAt("job" + jnum + "-show", "mechNew", "mech")
+            .tdsAddDTypeAt(
+                2,
+                "mech-name",
+                4,
+                "mech-units",
+                "mech-amount",
+                16,
+                "mech-eur",
+                "mech-dol",
+                "mech-discount",
+                1,
+                "mech-markup",
+                2,
+                "mech-rub"
+            );
+        tr.find("input").filter(function () {
+            return this.className.split(/\s+/).find(function (i) {
+                return (/job\d+-mechNew-delete/).test(i);
+            }) !== undefined;
+        })
+            .click(function (e) {
+                $(e.target).closest("tr").remove();
+            });
+
+        let divs = tr.find("[data-type]").addClass("changed").wrapInner("<div class='changeable' contenteditable='true'></div>").find("[contenteditable='true']");
+
+        divs.contentEditable();
+        divs.bind("input", function cl(e) {
+            let t = e.target;
+
+            t = $(t);
+            let td = t.closest("td");
+
+            let rv = $("<input class='refresh-value' type='button' value='R'>");
+            rv.click(function (e) {
+                e.stopPropagation();
+                td.removeClass("inputed");
+                td.find(".refresh-value").remove();
+                t.text("");
+            });
+
+            if (t.text() != "") {
+                td.addClass("inputed");
+                if (td.find(".refresh-value").length == 0)
+                    td.append(rv);
+            }
+            else {
+                td.removeClass("inputed");
+                td.find(".refresh-value").remove();
+            }
+        });
+    });
+
+    $(".button-add[class*='mat']").click(function () {
+        let jnum = this.className.match(/job\d+-mat-add/)[0].match(/\d+/)[0];
+
+        let tr = $(this).closest("tr").nextUntil(".mechs,.job").last();
+        tr = tr.length ? tr : $(this).closest("tr");
+        tr.addTdsAt("<input type='button' class='job" + jnum + "-matNew" + "-delete button-delete' value='X'>");
+
+        tr = $(this).closest("tr").nextUntil(".mechs,.job").last();
+        tr = tr.length ? tr : $(this).closest("tr");
+        tr.trAddClAt("job" + jnum + "-show", "matNew", "mat")
+            .tdsAddDTypeAt(
+                2,
+                "mat-name",
+                4,
+                "mat-units",
+                "mat-amount",
+                16,
+                "mat-eur",
+                "mat-dol",
+                "mat-discount",
+                1,
+                "mat-markup",
+                2,
+                "mat-rub"
+            );
+        tr.find("input").filter(function () {
+            return this.className.split(/\s+/).find(function (i) {
+                return (/job\d+-matNew-delete/).test(i);
+            }) !== undefined;
+        })
+            .click(function (e) {
+                $(e.target).closest("tr").remove();
+            });
+
+        let divs = tr.find("[data-type]").addClass("changed").wrapInner("<div class='changeable' contenteditable='true'></div>").find("[contenteditable='true']");
+        divs.contentEditable();
+        divs.bind("input", function cl(e) {
+            let t = e.target;
+
+            t = $(t);
+            let td = t.closest("td");
+
+            let rv = $("<input class='refresh-value' type='button' value='R'>");
+            rv.click(function (e) {
+                e.stopPropagation();
+                td.removeClass("inputed");
+                td.find(".refresh-value").remove();
+                t.text("");
+            });
+
+            if (t.text() != "") {
+                td.addClass("inputed");
+                if (td.find(".refresh-value").length == 0)
+                    td.append(rv);
+            }
+            else {
+                td.removeClass("inputed");
+                td.find(".refresh-value").remove();
+            }
+        });
+    });
+</script>
+
+<script>
+    //delete mech/mat
+    $("#table").find("td").find("input").filter(function () {
+        return this.className.split(/\s+/).find(function (i) {
+            return (/job\d+-(mech|mat)\d+-delete/).test(i);
+        }) !== undefined;
+    })
+        .click(function (e) {
+            let tr = $(e.target).closest("tr");
+            tr.toggleClass("deleted");
+        });
+
+    $("#table").find("td")
+
+    $("[data-type='id']").each(function () {
+        let dt = $(this);
+        let div = dt.find("div");
+        dt.data("text", div.text());
+        dt.attr("data-text", div.text());
+    });
+
+    let dts = $("[data-type]:not([data-type='id'])");
+    for (let i = 0; i < dts.length; i++) {
+        let dt = dts.eq(i);
+        dt.data("text", dt.text());
+        dt.attr("data-text", dt.text());
+        dt.wrapInner("<div class='changeable' contenteditable='true'></div>");
+    }
+
+    $("[contenteditable='true']").contentEditable();
+    //change
+    dts.find("div").bind("input", function cl(e) {
+        let t = e.target;
+
+        t = $(t);
+        let td = t.closest("td");
+        let rv = $("<input class='refresh-value' type='button' value='R'>");
+        rv.click(function (e) {
+            e.stopPropagation();
+            td.removeClass("changed");
+            td.find(".refresh-value").remove();
+            t.text(td.data("text"));
+        });
+
+        if (t.text() != td.data("text")) {
+            td.addClass("changed");
+            if (td.find(".refresh-value").length == 0)
+                td.append(rv);
+        }
+        else {
+            td.removeClass("changed");
+            td.find(".refresh-value").remove();
+        }
+    });
+
+    dts.filter(".matNew>*,.mechNew>*").find("div").bind("input", function cl(e) {
+        let t = e.target;
+
+        t = $(t);
+        let td = t.closest("td");
+        td.addClass("changed");
+
+        let rv = $("<input class='refresh-value' type='button' value='R'>");
+        rv.click(function (e) {
+            e.stopPropagation();
+            td.removeClass("inputed");
+            td.find(".refresh-value").remove();
+            t.text("");
+        });
+
+        if (t.text() != "") {
+            td.addClass("inputed");
+            if (td.find(".refresh-value").length == 0)
+                td.append(rv);
+        }
+        else {
+            td.removeClass("inputed");
+            td.find(".refresh-value").remove();
+        }
+    });
+
+    $("[data-type='mech-id'],[data-type='mat-id']").find("div").hide();
+
+</script>
+
+

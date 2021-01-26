@@ -1,0 +1,14 @@
+﻿@model IEnumerable<SmetaApp.Models.MechNameMap>
+
+<div class="result-space">
+    @foreach (var j in Model)
+    {
+        <div onclick="$(this).closest('td').children('div').text($(this).text()); $(this).closest('td').children('div').trigger('input');$('.result-space').hide();" class="find-result">@j.MechName</div>
+    }
+</div>
+
+<script>
+    if ("@Model.Any()"== "False")
+        $(".result-space").hide();
+    checkMech("@ViewBag.Match");
+</script>

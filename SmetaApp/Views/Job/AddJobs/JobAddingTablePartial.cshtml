@@ -1,0 +1,623 @@
+﻿<script>
+    $("#table").addThs("<input type='button' class='jobs-open button-open' value='>'>", "№ п/п", "Наименование и техническая характеристика", "Тип, марка", "Код оборудования", "Завод - изготовитель",
+        "Измеритель", "Ед. изм.", "Кол-во", "Масса единицы, кг", "Примечание", "Информация")
+        .addThs("<input type='button' class='jobs-open button-open' value='>'>", "№ п/п", "Наименование и техническая характеристика", "Тип, марка", "Код оборудования", "Завод - изготовитель", "Измеритель",
+            "Ед. изм.", "Кол-во", "Масса единицы, кг", "Примечание", "Информация")
+        .rowspanizer({ vertical_align: 'middle' });
+
+
+    let notIsOne = true;
+
+    let ModelJSON = null;
+
+    let jobsOnPage = 0;
+
+    function getRange() {
+        return $("#range,[data-id='range']").find("option:selected").first().val();
+    }
+
+    //Seems that it returns result faster, when async is used
+    async function addJobs(ModelProxy) {
+        let pr;
+        let j = ModelProxy.length;
+
+
+        let range = +(getRange() || 100);
+        let rgel = $("#range,[data-id='range']").first().detach();
+        //I don't use chaining, because I want all promises to perform at the same time
+        //All results appear like them should
+        pr = add(0, Math.min(range, j), ModelProxy);
+        jobsOnPage = Math.min(range, j);
+
+        await pr;
+
+        pr.then(() => everyTime(Math.min(range,j)));
+
+
+
+        if (j > range) {
+            pr.then(() => $("#table").append("<tr id='showjobs' class='showjobs'><td colspan='12'>" + rgel.prop('outerHTML') + "<input type='button' value='Показать скрытые работы(" + (j - range) + ")' onclick='addOnclick(" + range + ", Math.min(2 * (+(getRange() || 100)), "+ModelProxy.length+"), " + (ModelJSON == null ? ModelJSON = JSON.stringify(ModelProxy) : ModelJSON) + ");'> </input></td></tr>"));
+        }
+        else {
+            pr.then(() => $("#table").append("<tr id='addjobs' class='addjobs'><td colspan='12'><input type='button' value='Создать работу' onclick='let t=$(this).closest(`tr`).detach();addEmptyJob();$(`#table`).append(t);'> </input></td></tr>"));
+        }
+
+
+        if (notIsOne) {
+            notIsOne = false;
+            pr.then(()=>oneTime());
+        }
+
+        return pr;
+
+    }
+
+    async function addOnclick(st, en, ModelProxy) {
+        let rgel=$("#range,[data-id='range']").first().detach();
+
+        $("#showjobs").remove();
+        $("#addjobs").remove();
+
+        let pr = add(st, en, ModelProxy);
+
+        await pr;
+
+        pr.then(() => everyTime(Math.min(en,ModelProxy.length),st));
+        jobsOnPage = Math.min(en, ModelProxy.length);
+
+        pr.then(() => checkJobsFunction(ModelProxy, st));
+        pr.then(() => checkMatsFunction(ModelProxy, st));
+        pr.then(() => checkMechsFunction(ModelProxy, st));
+
+        if (en < ModelProxy.length) {
+            pr.then(() => $("#table").append("<tr id='showjobs' class='showjobs'><td colspan='12'>" + rgel.prop('outerHTML') + "<input type='button' value='Показать скрытые работы(" + (ModelProxy.length - en) + ")' onclick='addOnclick(" + en + ",  Math.min("+en+" + (+(getRange() || 100)), "+ModelProxy.length+"), " + (ModelJSON == null ? ModelJSON = JSON.stringify(ModelProxy) : ModelJSON) + ");'> </input></td></tr>"));
+        }
+        else {
+            pr.then(() => $("#table").append("<tr id='addjobs' class='addjobs'><td colspan='12'><input type='button' value='Создать работу' onclick='let t=$(this).closest(`tr`).detach();addEmptyJob();$(`#table`).append(t);'> </input></td></tr>"));
+        }
+
+        return pr;
+    }
+
+    async function add(st, en, ModelProxy) {
+        let pr = Promise.resolve();
+        for (let k = st; k < en; k++) {
+            pr.then(() => ((j) => {
+                let item = ModelProxy[k];
+                //Add jobs
+                $("#table").addTds(
+                    "<input type='button' class='job" + j + "-open button-open' value='>'><input type='button' class='job" + j + "-delete button-delete' value='X'>",
+                    "" + j,
+                    item.Name,
+                    item.Type,
+                    item.Code,
+                    item.Producer,
+                    item.Measurer,
+                    item.Units,
+                    item.Amount,
+                    item.Mass,
+                    item.Note
+                )
+                    .trAddCl("job" + j, "job")
+                    .tdsAddDType(
+                        2,
+                        "name",
+                        "type",
+                        "code",
+                        "producer",
+                        "measurer",
+                        "units",
+                        "amount",
+                        "mass",
+                        "note",
+                        "info"
+                    )
+                    .addTds(
+                        1,
+                        "Затраты труда рабочих",
+                        4,
+                        "чел.-ч",
+                        item.WLaborCosts
+                    )
+                    .trAddCl("job" + j + "-hide")
+                    .tdsAddDType(
+                        7,
+                        "wlaborcosts"
+                    )
+                    .addTds(
+                        1,
+                        "Средний разряд работы",
+                        5,
+                        item.AvRank
+                    )
+
+                    .trAddCl("job" + j + "-hide")
+                    .tdsAddDType(
+                        7,
+                        "avrank"
+                    )
+                    .addTds(
+                        1,
+                        "Затраты труда машинистов",
+                        4,
+                        "чел.-ч",
+                        item.MLaborCosts
+                    )
+                    .trAddCl("job" + j + "-hide")
+                    .tdsAddDType(
+                        7,
+                        "mlaborcosts"
+                    );
+                //Add mechs
+                $("#table").addTds(
+                    "<input type='button' class='job" + j + "-mech-add button-add' value='+'>",
+                    "МАШИНЫ И МЕХАНИЗМЫ"
+                )
+                    .trAddCl("job" + j + "-hide", "mechs");
+                if (item.Mechs != null) {
+
+                    for (let mech of item.Mechs) {
+                        $("#table").addTds(
+                            "<input type='button' class='job" + j + "-mech-delete button-delete' value='X'>",
+                            1,
+                            mech.Name,
+                            1,
+                            mech.Code,
+                            2,
+                            "маш.-ч",
+                            mech.Amount
+                        )
+                            .trAddCl("job" + j + "-hide", "mech")
+                            .tdsAddDType(
+                                2,
+                                "mech-name",
+                                1,
+                                "mech-code",
+                                3,
+                                "mech-amount",
+                                2,
+                                "info"
+                            );
+                    }
+                }
+                //Add mats
+                $("#table").addTds(
+                    "<input type='button' class='job" + j + "-mat-add button-add' value='+'>",
+                    "МАТЕРИАЛЫ"
+                )
+                    .trAddCl("job" + j + "-hide", "mats");
+                if (item.Mats != null) {
+
+                    for (let mat of item.Mats) {
+                        $("#table").addTds(
+                            "<input type='button' class='job" + j + "-mat-delete button-delete' value='X'>",
+                            1,
+                            mat.Name,
+                            1,
+                            mat.Code,
+                            2,
+                            mat.Units,
+                            mat.Amount
+                        )
+                            .trAddCl("job" + j + "-hide", "mat")
+                            .tdsAddDType(
+                                2,
+                                "mat-name",
+                                1,
+                                "mat-code",
+                                2,
+                                "mat-units",
+                                "mat-amount",
+                                2,
+                                "info"
+                            );
+                    }
+
+                }
+                j++;
+            })(k + 1));
+        }
+        return pr;
+    }
+
+    function addEmptyJob() {
+        let jbs = $("#table").find("tr.job");
+        let j = jobsOnPage+1;
+        jobsOnPage++;
+        //Add jobs
+        $("#table").addTds(
+            "<input type='button' class='job" + j + "-open button-open' value='>'><input type='button' class='job" + j + "-delete button-delete' value='X'>",
+            "" + j,
+        )
+            .trAddCl("job" + j, "job")
+            .tdsAddDType(
+                2,
+                "name",
+                "type",
+                "code",
+                "producer",
+                "measurer",
+                "units",
+                "amount",
+                "mass",
+                "note",
+                "info"
+            )
+            .addTds(
+                1,
+                "Затраты труда рабочих",
+                4,
+                "чел.-ч"
+            )
+            .trAddCl("job" + j + "-hide")
+            .tdsAddDType(
+                7,
+                "wlaborcosts"
+            )
+            .addTds(
+                1,
+                "Средний разряд работы",
+                5
+            )
+
+            .trAddCl("job" + j + "-hide")
+            .tdsAddDType(
+                7,
+                "avrank"
+            )
+            .addTds(
+                1,
+                "Затраты труда машинистов",
+                4,
+                "чел.-ч"
+            )
+            .trAddCl("job" + j + "-hide")
+            .tdsAddDType(
+                7,
+                "mlaborcosts"
+            );
+
+        $("#table").addTds(
+            "<input type='button' class='job" + j + "-mech-add button-add' value='+'>",
+            "МАШИНЫ И МЕХАНИЗМЫ"
+        )
+            .trAddCl("job" + j + "-hide", "mechs");
+
+        $("#table").addTds(
+            "<input type='button' class='job" + j + "-mat-add button-add' value='+'>",
+            "МАТЕРИАЛЫ"
+        )
+            .trAddCl("job" + j + "-hide", "mats");
+
+
+        $(".job" + j + "-open").click(function () {
+            let jrows = $(".job" + j + "-hide,.job" + j + "-show");
+            jrows.toggleClass("job" + j + "-hide");
+            jrows.toggleClass("job" + j + "-show");
+        });
+
+        $(".job" + j + "-delete").click(function () {
+            $(".job" + j + ",.job" + j + "-hide,.job" + j + "-show").remove();
+            //Changing of following numbers isn't necessary
+        });
+
+        $(".jobs-open").one("click", function cl() {
+            let jrows = $(".job" + j + "-hide,.job" + j + "-show");
+            jrows.addClass("job" + j + "-show");
+            jrows.removeClass("job" + j + "-hide");
+            $(this).one("click", function () {
+                let jrows = $(".job" + j + "-hide,.job" + j + "-show");
+                jrows.removeClass("job" + j + "-show");
+                jrows.addClass("job" + j + "-hide");
+                $(this).one("click", cl);
+            });
+        });
+
+        $("<style>.job" + j + "-hide{ display: none; }</style>").appendTo('head');
+
+        let dts = $("[data-type]:not([data-type='info'])").filter(function () {
+            return $(this).children("div").length == 0;
+        });
+        for (let i = 0; i < dts.length; i++) {
+            let dt = dts.eq(i);
+            dt.data("text", dt.text());
+            dt.attr("data-text", dt.text());
+            dt.wrapInner("<div class='changeable' contenteditable='true'></div>");
+        }
+
+        $("[contenteditable='true']").contentEditable();
+        //change
+        dts.find("div").bind("input", function cl(e) {
+            let t = e.target;
+
+            t = $(t);
+            let td = t.closest("td");
+            let rv = $("<input class='refresh-value' type='button' value='R'>");
+            rv.click(function (e) {
+                e.stopPropagation();
+                td.removeClass("changed");
+                td.find(".refresh-value").remove();
+                t.text(td.data("text"));
+                t.trigger('input');
+            });
+
+            if (t.text() != td.data("text")) {
+                td.addClass("changed");
+                if (td.find(".refresh-value").length == 0)
+                    td.append(rv);
+            }
+            else {
+                td.removeClass("changed");
+                td.find(".refresh-value").remove();
+            }
+        });
+    }
+
+    function oneTime() {
+        $("#table").on("click","[class*='button-open']:not(.jobs-open)",function () {
+            let t = $(this);
+            if (t.val() == ">")
+                t.val("V");
+            else
+                t.val(">");
+        });
+
+        
+        $("#table").on("click",".button-add[class*='mech']",function () {
+            let jnum = this.className.match(/job\d+-mech-add/)[0].match(/\d+/)[0];
+
+            let tr = $(this).closest("tr").nextUntil(".mats,.job,.addjobs").last();
+            tr = tr.length ? tr : $(this).closest("tr");
+            tr.addTdsAt("<input type='button' class='job" + jnum + "-mechNew" + "-delete button-delete' value='X'>");
+
+            tr = $(this).closest("tr").nextUntil(".mats,.job,.addjobs").last();
+            tr = tr.length ? tr : $(this).closest("tr");
+            tr.trAddClAt("job" + jnum + "-show", "mechNew", "mech")
+                .tdsAddDTypeAt(
+                    2,
+                    "mech-name",
+                    1,
+                    "mech-code",
+                    3,
+                    "mech-amount",
+                    2,
+                    "info"
+                );
+            tr.find("input").filter(function () {
+                return this.className.split(/\s+/).find(function (i) {
+                    return (/job\d+-mechNew-delete/).test(i);
+                }) !== undefined;
+            })
+                .click(function (e) {
+                    $(e.target).closest("tr").remove();
+                });
+
+            let divs = tr.find("[data-type]").addClass("changed").wrapInner("<div class='changeable' contenteditable='true'></div>").find("[contenteditable='true']");
+
+            divs.contentEditable();
+            divs.bind("input", function cl(e) {
+                let t = e.target;
+
+                t = $(t);
+                let td = t.closest("td");
+
+                let rv = $("<input class='refresh-value' type='button' value='R'>");
+                rv.click(function (e) {
+                    e.stopPropagation();
+                    td.removeClass("inputed");
+                    td.find(".refresh-value").remove();
+                    t.text("");
+                    t.trigger('input');
+                });
+
+                if (t.text() != "") {
+                    td.addClass("inputed");
+                    if (td.find(".refresh-value").length == 0)
+                        td.append(rv);
+                }
+                else {
+                    td.removeClass("inputed");
+                    td.find(".refresh-value").remove();
+                }
+            });
+        });
+
+        
+        $("#table").on("click",".button-add[class*='mat']",function () {
+            let jnum = this.className.match(/job\d+-mat-add/)[0].match(/\d+/)[0];
+
+            let tr = $(this).closest("tr").nextUntil(".mechs,.job,.addjobs").last();
+            tr = tr.length ? tr : $(this).closest("tr");
+            tr.addTdsAt("<input type='button' class='job" + jnum + "-matNew" + "-delete button-delete' value='X'>");
+
+            tr = $(this).closest("tr").nextUntil(".mechs,.job,.addjobs").last();
+            tr = tr.length ? tr : $(this).closest("tr");
+            tr.trAddClAt("job" + jnum + "-show", "matNew", "mat")
+                .tdsAddDTypeAt(
+                    2,
+                    "mat-name",
+                    1,
+                    "mat-code",
+                    2,
+                    "mat-units",
+                    "mat-amount",
+                    2,
+                    "info"
+                );
+            tr.find("input").filter(function () {
+                return this.className.split(/\s+/).find(function (i) {
+                    return (/job\d+-matNew-delete/).test(i);
+                }) !== undefined;
+            })
+                .click(function (e) {
+                    $(e.target).closest("tr").remove();
+                });
+
+            let divs = tr.find("[data-type]").addClass("changed").wrapInner("<div class='changeable' contenteditable='true'></div>").find("[contenteditable='true']");
+            divs.contentEditable();
+            divs.bind("input", function cl(e) {
+                let t = e.target;
+
+                t = $(t);
+                let td = t.closest("td");
+
+                let rv = $("<input class='refresh-value' type='button' value='R'>");
+                rv.click(function (e) {
+                    e.stopPropagation();
+                    td.removeClass("inputed");
+                    td.find(".refresh-value").remove();
+                    t.text("");
+                });
+
+                if (t.text() != "") {
+                    td.addClass("inputed");
+                    if (td.find(".refresh-value").length == 0)
+                        td.append(rv);
+                }
+                else {
+                    td.removeClass("inputed");
+                    td.find(".refresh-value").remove();
+                }
+            });
+        });
+    }
+
+    function everyTime(j,st=0) {
+        let hide = "";
+        for (let i = st+1; i <= j; i++) {
+            hide += ".job" + i + "-hide";
+            if (i != j) {
+                hide += ",";
+            }
+
+            $(".job" + i + "-open").click(function () {
+                let jrows = $(".job" + i + "-hide,.job" + i + "-show");
+                jrows.toggleClass("job" + i + "-hide");
+                jrows.toggleClass("job" + i + "-show");
+            });
+
+            $(".job" + i + "-delete").click(function () {
+                let jAndRows = $(".job" + i + ",.job" + i + "-hide,.job" + i + "-show");
+                jAndRows.toggleClass("deleted");
+            });
+
+            $(".jobs-open").one("click", function cl() {
+                let jrows = $(".job" + i + "-hide,.job" + i + "-show");
+                jrows.addClass("job" + i + "-show");
+                jrows.removeClass("job" + i + "-hide");
+                $(this).one("click", function () {
+                    let jrows = $(".job" + i + "-hide,.job" + i + "-show");
+                    jrows.removeClass("job" + i + "-show");
+                    jrows.addClass("job" + i + "-hide");
+                    $(this).one("click", cl);
+                });
+            });
+        }
+        
+        $(".jobs-open").bind("click",function () {
+            let t = $(this);
+            if (t.val() == ">") {
+                $("[class$='-open'],[class*='-open ']").val("V");
+            }
+            else {
+                $("[class$='-open'],[class*='-open ']").val(">");
+            }
+        });
+
+        $("<style>" + hide + "{ display: none; }</style>").appendTo('head');
+
+
+
+
+
+
+        //delete mech/mat
+        $("#table").find("td").find("input").filter(function () {
+            return this.className.split(/\s+/).find(function (i) {
+                return (/job\d+-(mech|mat)-delete/).test(i);
+            }) !== undefined;
+        })
+            .click(function (e) {
+                let tr = $(e.target).closest("tr");
+                tr.toggleClass("deleted");
+            });
+
+        $("#table").find("td")
+
+        let dts = $("[data-type]:not([data-type='info'])").filter(function () {
+            return $(this).find("div[contenteditable='true']").length == 0;
+        });
+        for (let i = 0; i < dts.length; i++) {
+            let dt = dts.eq(i);
+            dt.data("text", dt.text());
+            dt.attr("data-text", dt.text());
+            dt.wrapInner("<div class='changeable' contenteditable='true'></div>");
+        }
+
+        $("[contenteditable='true']").contentEditable();
+        //change
+        dts.find("div").bind("input", function cl(e) {
+            let t = e.target;
+
+            t = $(t);
+            let td = t.closest("td");
+            let rv = $("<input class='refresh-value' type='button' value='R'>");
+            rv.click(function (e) {
+                e.stopPropagation();
+                td.removeClass("changed");
+                td.find(".refresh-value").remove();
+                t.text(td.data("text"));
+                t.trigger('input');
+            });
+
+            if (t.text() != td.data("text")) {
+                td.addClass("changed");
+                if (td.find(".refresh-value").length == 0)
+                    td.append(rv);
+            }
+            else {
+                td.removeClass("changed");
+                td.find(".refresh-value").remove();
+            }
+        });
+    }
+
+    //AddJobs Dependencies
+    function checkJobsFunction(ModelProxy,start) {
+        let js = ModelProxy.slice(start).map(j => [j.Name, j.Type]);
+        if (isChecking) {
+            let intid = setInterval(function (js) {
+                if (!isChecking) {
+                    clearInterval(intid);
+
+                    checkResJobMany(start);
+                    checkJobs(js);
+                }
+            }, getRange() || 100, js);
+        }
+        else {
+            checkResJobMany(start);
+            checkJobs(js);
+        }
+    }
+
+    function checkMatsFunction(ModelProxy, st) {
+        let ms = ModelProxy.slice(st).reduce((acc, j) => {
+            return acc.concat(j.Mats);
+        },[])
+            .map(m => m.Name);
+
+        checkMats(ms,st);
+    }
+
+    function checkMechsFunction(ModelProxy, st) {
+        let ms = ModelProxy.slice(st).reduce((acc, j) => {
+            return acc.concat(j.Mechs);
+        }, [])
+            .map(m => m.Name);
+
+        checkMechs(ms,st);
+    }
+</script>
+
+

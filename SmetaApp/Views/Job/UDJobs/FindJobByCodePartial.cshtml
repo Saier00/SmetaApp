@@ -1,0 +1,13 @@
+﻿@model IEnumerable<SmetaApp.Models.Job>
+
+<div class="result-space">
+@foreach (var j in Model)
+{
+    <div onclick="$('#findcode').val($(this).text());" class="find-result" >@j.Code</div>
+}
+</div>
+
+<script>
+    if ("@Model.Any()"== "False")
+        $(".result-space").hide();
+</script>

@@ -1,0 +1,107 @@
+table{
+    padding-top: 20px;
+    padding-bottom:20px;
+}
+table,td,th{
+	border: 1px solid black;
+}
+td, th {
+    text-align: center;
+    padding: 10px;
+}
+form{
+    display:inline;
+    padding: 2px;
+}
+.button-delete{
+    background-color:red;
+}
+.button-open{
+    background-color:green;
+}
+.button-add {
+    background-color: green;
+}
+.button-close{
+    border:none;
+    color: red;
+    position:absolute;
+    right:0px;
+    top:0px;
+}
+
+.job {
+    background-color: gainsboro;
+}
+.outPrice{
+    background-color:mediumseagreen;
+}
+.deleted {
+    background-color: darkgray;
+}
+.changed {
+    background-color: yellow;
+}
+.inputed {
+    background-color:aquamarine;
+}
+
+.result-space {
+    border: 1px solid black;
+    box-shadow: 0 1px 7px #9a9a9a;
+    width: 400px;
+    position: absolute;
+    background-color: white;
+    text-align:left;
+}
+
+.find-result:hover {
+    background-color: khaki;
+}
+
+.changeable{
+    min-height:20px;
+    min-width:40px;
+}
+
+.drop {
+    border: 2px dashed #bbb;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+    padding: 25px;
+    text-align: center;
+    font: 20pt bold,"Vollkorn";
+    color: #bbb;
+}
+
+.float-field {
+    border: 1px solid black;
+    box-shadow: 0 1px 7px #9a9a9a;
+    width: 40%;
+    height: 40%;
+    position: fixed;
+    background-color: white;
+    text-align: center;
+    vertical-align:central;
+    left:30%;
+    top: 30%;
+}
+
+.inlbl{
+    display:inline-block;
+}
+.label-input{
+    display:block;
+}
+.find-job {
+    padding-top: 30px;
+    padding-bottom: 30px;
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
+.search-results{
+    height:500px;
+    width:1000px;
+    overflow:auto;
+}

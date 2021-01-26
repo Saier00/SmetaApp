@@ -1,0 +1,344 @@
+﻿@model PagedList.IPagedList<SmetaApp.Models.Job>
+@using PagedList.Mvc;
+<link href="~/Content/PagedList.css" rel="stylesheet" type="text/css" />
+
+@{
+    ViewBag.Title = "UDJobs";
+
+    Func<int, string> pageFunc;
+    string Action;
+    if (ViewBag.Type == "Name" || ViewBag.Type == "Type" || ViewBag.Type == "Code" || ViewBag.Type == "Mat" || ViewBag.Type == "Mech")
+    {
+        Action = "FindJobBy" + ViewBag.Type;
+        pageFunc = page => Url.Action(Action, new { ViewBag.Search, page, size = Model.PageSize });
+    }
+    else
+    {
+        Action = "UDJobs";
+        pageFunc = page => Url.Action("UDJobs", new { page, size = Model.PageSize });
+    }
+}
+
+<!--PageStart-->
+<h2>UDJobs</h2>
+<div class="find-job">
+    <h3>Поиск работы:</h3>
+    @foreach (string[] s in new string[3][] { new string[] { "Name", "Наименование" }, new string[] { "Type", "Тип" }, new string[] { "Code", "Код" } })
+    {
+        <div class="find-@s[0].ToLower()" style="float:left;margin-right:20px;">
+            <div><label for="find-@s[0].ToLower()">@s[1]:</label></div>
+            <div>
+                @using (Ajax.BeginForm("UDFindJobBy" + s[0] + "Partial", new AjaxOptions { UpdateTargetId = "results-" + s[0].ToLower() }))
+                {
+                    <input type="text" class="find-job-by-@s[0].ToLower()" name="@s[0]" placeholder="@s[1]" autocomplete="off" id="find-@s[0].ToLower()" />
+                }
+                <span id="results-@s[0].ToLower()"></span>
+
+
+                @using (Html.BeginForm("FindJobBy" + s[0], "Job", FormMethod.Get, new { id = "find-" + s[0].ToLower() + "-form" }))
+                {
+                    <input type="text" hidden name="Search" />
+                    <input type="submit" value="Поиск" />
+                }
+            </div>
+        </div>
+    }
+    @foreach (string[] s in new string[2][] { new string[] { "Mat", "Материал" }, new string[] { "Mech", "Механизм" } })
+    {
+        <div class="find-@s[0].ToLower()" style="float:left;margin-right:20px;">
+            <div><label for="find-@s[0].ToLower()">@s[1]:</label></div>
+            <div>
+                @using (Ajax.BeginForm("UDFindJobBy" + s[0] + "Partial",s[0], new AjaxOptions { UpdateTargetId = "results-" + s[0].ToLower() }))
+                {
+                    <input type="text" class="find-job-by-@s[0].ToLower()" name="@s[0]" placeholder="@s[1]" autocomplete="off" id="find-@s[0].ToLower()" />
+                }
+                <span id="results-@s[0].ToLower()"></span>
+
+
+                @using (Html.BeginForm("FindJobBy" + s[0], "Job", FormMethod.Get, new { id = "find-" + s[0].ToLower() + "-form" }))
+                {
+                    <input type="text" hidden name="Search" />
+                    <input type="submit" value="Поиск" />
+                }
+            </div>
+        </div>
+    }
+</div>
+<div>
+    <table id="table">
+    </table>
+</div>
+
+Страница @(Model.PageCount < Model.PageNumber ? 0 : Model.PageNumber) из @Model.PageCount
+@Html.PagedListPager(Model, pageFunc)
+@using (Html.BeginForm(Action, "Job", FormMethod.Get, new { id = "pagesizeform" }))
+{
+    <select name="size" id="pagesize">
+        <option value="10">
+            10
+        </option>
+        <option value="50">
+            50
+        </option>
+        <option value="100">
+            100
+        </option>
+    </select>
+    if (ViewBag.Search != "")
+    {
+        <input name="Search" value="@ViewBag.Search" hidden />
+    }
+}
+
+<input type="button" id="saveresults" value="Сохранить" />
+<!--PageEnd-->
+<!--HiddenJobUpdateFormStart-->
+<div id="update-job" hidden>
+    @using (Ajax.BeginForm("UpdateJob", new AjaxOptions { OnSuccess = "onsuccess" }))
+    {
+    }
+
+    <script>
+        //form's methods
+        let hn = 0, tn = 0;
+        function addMech(id, name, amount, eur, dol, rub) {
+            let str = '<input type="text" name="Mechs[' + hn + '].MechId" value="' + id + '"/><input type="text" name="Mechs[' + hn + '].Name" value="' + name + '"/><input type="text" name="Mechs[' + hn + '].Amount" value="' + amount + '"/>';
+            /*
+            if (eur !== undefined)
+                str += '<input type="text" name="Mechs[' + hn + '].AlterMechPrice.Eur" value="' + eur + '"/>';
+            if (dol !== undefined)
+                str += '<input type="text" name="Mechs[' + hn + '].AlterMechPrice.Eur" value="' + dol + '"/>';
+            if (rub !== undefined)
+                str += '<input type="text" name="Mechs[' + hn + '].AlterMechPrice.Eur" value="' + rub + '"/>';
+            */
+            $("#update-job").children("form").append(str);
+            hn++;
+        }
+
+        function addMat(id, name, amount, units, eur, dol, rub) {
+            let str = '<input type="text" name="Mats[' + tn + '].MatId" value="' + id + '"/><input type="text" name="Mats[' + tn + '].Name" value="' + name + '"/><input type="text" name="Mats[' + tn + '].Amount" value="' + amount + '"/><input type="text" name="Mats[' + tn + '].Units" value="' + units + '"/>';
+            /*
+            if (eur !== undefined)
+                str += '<input type="text" name="Mats[' + tn + '].AlterMatPrice.Eur" value="' + eur + '"/>';
+            if (dol !== undefined)
+                str += '<input type="text" name="Mats[' + tn + '].AlterMatPrice.Eur" value="' + dol + '"/>';
+            if (rub !== undefined)
+                str += '<input type="text" name="Mats[' + tn + '].AlterMatPrice.Eur" value="' + rub + '"/>';
+            */
+            $("#update-job").children("form").append(str);
+            tn++;
+        }
+
+        function resetForm() {
+            let form = $("#update-job").children("form");
+            form.empty();
+        }
+        function resetMechsMats(){
+            hn = 0;
+            tn = 0;
+        }
+        function addToArray(i) {
+            let form = $("#update-job").children("form");
+
+            form.children("input:not([name^='['])").each(function (ind, el) {
+                el = $(el);
+                el.attr("name", "[" + i + "]." + el.attr("name"));
+            });
+        }
+
+    </script>
+
+</div>
+<!--HiddenJobUpdateFormEnd-->
+<!--HiddenJobDeleteFormStart-->
+<div id="delete-job" hidden>
+    @using (Ajax.BeginForm("DeleteJob", new AjaxOptions { OnSuccess = "onsuccess" }))
+    {
+    }
+</div>
+<!--HiddenJobDeleteFormEnd-->
+
+@{Html.RenderPartial("UDJobs/JobTablePartial");}
+<script>
+    //ajax search
+    function hideOnFocus(id) {
+        return ()=>$(id).hide();
+    }
+
+    
+    for (let s of ["name", "type", "code", "mat", "mech"]) {
+        $("#find-" + s).bind("input", function () {
+            let t = $(this);
+            if (t.val() != "") {
+                t.closest("form").submit();
+                $("#results-" + s).show();
+                $(":not(#results-" + s + ")").not(t).one("focus", hideOnFocus("#results-" + s));
+            }
+            else {
+                $("#results-name").hide();
+                $(":not(#results-" + s + ")").not(t).off("focus", hideOnFocus("#results-" + s));
+            }
+        });
+        $("#find-" + s + "-form").submit(function () {
+            $(this).find("[name='Search']").val($("#find-" + s).val());
+        });
+    }
+
+    //
+    $("#pagesize").find("option[value='@Model.PageSize']").attr("selected", "selected");
+    $("#pagesize").change(function () {
+        $(this).closest("form").submit();
+    });
+    //
+    $("#saveresults").click(function () {
+        let save = confirm("Сохранить изменения?");
+        if (save) {
+            //delete jobs
+            deleteJobs($("#table").find("tr.deleted.job"));
+
+            //change jobs+delete mats/mechs
+            let jobs = $("#table").find("tr.job:not(.deleted)").filter(function () {
+                return $(this).find(".changed").length>0 || $(this).nextUntil(".job").find(".changed").length>0||$(this).nextUntil(".job").hasClass("deleted");
+            });
+
+            updateJobs(jobs);
+        }
+    });
+
+    //hidden form's functions:
+    function updateJobs(j) {
+        if (j.length > 0) {
+            resetForm();
+            try {
+                j.each(function (i, el) {
+                    let job = $(el);
+
+
+                    //[Filling form]
+                    for (let i of ["Id","Name", "Type", "Code", "Producer", "Measurer", "Units", "Amount", "Mass", "Note"])
+                        jFillUp(job, i);
+                    //WLaborCosts tr
+                    let tr = job.next("tr");
+                    jFillUp(tr, "WLaborCosts");
+                    //AvRank
+                    tr = tr.next("tr");
+                    jFillUp(tr, "AvRank");
+                    //MLaborCosts
+                    tr = tr.next("tr");
+                    jFillUp(tr, "MLaborCosts");
+
+                    resetMechsMats();
+
+                    let ms = tr.nextUntil(".job").toArray();
+                    for (let m of ms) {
+                        tr = $(m);
+                        if (tr.hasClass("mat") && !tr.hasClass("deleted")) {
+                            let name = tr.find("[data-type='mat-name']"),
+                                amount = tr.find("[data-type='mat-amount']"),
+                                units = tr.find("[data-type='mat-units']"),
+                                rub = tr.find("[data-type='mat-rub']").hasClass("changed") ? tr.find("[data-type='mat-rub']") : undefined,
+                                dol = tr.find("[data-type='mat-dol']").hasClass("changed") ? tr.find("[data-type='mat-dol']") : undefined,
+                                eur = tr.find("[data-type='mat-eur']").hasClass("changed") ? tr.find("[data-type='mat-eur']") : undefined;
+
+                            [name, amount, units] = [name, amount, units].map(function (n) {
+                                if (n.children("div").length > 0 && n.children("div").text() != "")
+                                    return n.children("div").text();
+                                else if (n.children("div").length > 0 && n.children("div").text() == "")
+                                    return n.data("text");
+                                else if (n.text() != "")
+                                    return n.text();
+                                else
+                                    return n.data("text");
+                            });
+
+                            [eur, dol, rub] = [eur, dol, rub].map(function (n) {
+                                if (n === undefined)
+                                    return undefined;
+                                if (n.children("div").length > 0)
+                                    return n.children("div").text().replace(/,/g, '.');
+                                return n.text().replace(/,/g, '.');
+                            });
+
+                            [eur, dol, rub].forEach(function (n) {
+                                if (!(isNum(n) || n != "") && n !== undefined) {
+                                    throw new SyntaxError("Input correct number: " + tr.text());
+                                }
+                            });
+
+                            addMat(tr.find("[data-type='mat-id']").data("text"), name, amount, units, eur, dol, rub);
+                        }
+                        else if (tr.hasClass("mech") && !tr.hasClass("deleted")) {
+                            let name = tr.find("[data-type='mech-name']"),
+                                amount = tr.find("[data-type='mech-amount']"),
+                                rub = tr.find("[data-type='mech-rub']").hasClass("changed") ? tr.find("[data-type='mech-rub']") : undefined,
+                                dol = tr.find("[data-type='mech-dol']").hasClass("changed") ? tr.find("[data-type='mech-dol']") : undefined,
+                                eur = tr.find("[data-type='mech-eur']").hasClass("changed") ? tr.find("[data-type='mech-eur']") : undefined;
+
+                            [name, amount] = [name, amount].map(function (n) {
+                                if (n.children("div").length > 0 && n.children("div").text() != "")
+                                    return n.children("div").text();
+                                else if (n.children("div").length > 0 && n.children("div").text() == "")
+                                    return n.data("text");
+                                else if (n.text() != "")
+                                    return n.text();
+                                else
+                                    return n.data("text");
+                            });
+
+                            [eur, dol, rub] = [eur, dol, rub].map(function (n) {
+                                if (n === undefined)
+                                    return undefined;
+                                if (n.children("div").length > 0)
+                                    return n.children("div").text().replace(/,/g, '.');
+                                return n.text().replace(/,/g, '.');
+                            });
+
+                            [eur, dol, rub].forEach(function (n) {
+                                if (!(isNum(n) || n != "") && n !== undefined) {
+                                    throw new SyntaxError("Input correct number: " + tr.text());
+                                }
+                            });
+                            addMech(tr.find("[data-type='mech-id']").data("text"), name, amount, eur, dol, rub);
+                        }
+                    }
+
+                    addToArray(i);
+                });
+                $("#update-job").children("form").submit();
+            }
+            catch (e) {
+                if (e.name == "SyntaxError")
+                    alert("Некорректные данные:\n" + e.message);
+                else
+                    throw e;
+            }
+        }
+    }
+
+    function deleteJobs(j) {
+        if (j.length > 0) {
+            let form = $("#delete-job").children("form");
+            j.each(function (i, el) {
+                let e = $(el).find("[data-type='id']");
+                form.append("<input type='text' name='Ids' value='" + e.data("text") + "'></input>");
+            });
+            form.submit();
+            form.empty();
+        }
+    }
+
+    function jFillUp(job, t) {
+        let form = $("#update-job").children("form");
+        let e = $(job).find("[data-type='"+t.toLowerCase()+"']");
+        if (e.children("div").length > 0)
+            e = e.children("div");
+        form.append('<input type="text" name="'+t+'" value="'+e.text()+'" />');
+    }
+
+</script>
+<script>
+    //Utility functions
+    function isNum(n) {
+        return !isNaN(+n) && isFinite(n)
+    }
+</script>

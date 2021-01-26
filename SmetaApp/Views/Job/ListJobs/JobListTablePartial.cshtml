@@ -1,0 +1,716 @@
+﻿<script>
+    $("#table").addThs("<input type='button' class='jobs-open button-open' value='>'>", "№ п/п", "Наименование и техническая характеристика", "Тип, марка", "Код оборудования", "Завод - изготовитель",
+        "Измеритель", "Ед. изм.", "Кол-во", "Масса единицы, кг", "Примечание", 3, "Стоимость за единицу (руб.), в т.ч. НДС 20%",
+        3, "Стоимость всего (руб.), в т.ч. НДС 20%", "прайс, евро", "прайс, долл", "скидка поставщика", "с/с оборудования, рублей",
+        "НАЦЕНКА", "Повышающие коэффициенты", "Повышающие коэффициенты", "Цена поставщика", "прайс, евро", "прайс, долл", "скидка поставщика",
+        "с/с оборудования, рублей", "НАЦЕНКА", "Повышающие коэффициенты", "Повышающие коэффициенты", "Цена поставщика", "с/с оборудования, рублей",
+        "НАЦЕНКА", "Повышающие коэффициенты", "Повышающие коэффициенты", "ЦЕНА СОГЛАСНО ЛИСТУ МРОТ")
+        .addThs("<input type='button' class='jobs-open button-open' value='>'>", "№ п/п", "Наименование и техническая характеристика", "Тип, марка", "Код оборудования", "Завод - изготовитель", "Измеритель",
+            "Ед. изм.", "Кол-во", "Масса единицы, кг", "Примечание", "Стоимость оборудования и материалов, руб.", "Стоимость монтажных работ, руб/час.",
+            "Всего, руб.", "Стоимость оборудования и материалов, руб.", "Стоимость монтажных работ, руб/час.", "Всего, руб.", "прайс, евро", "прайс, долл", "скидка поставщика",
+            "с/с оборудования, рублей", "НАЦЕНКА", "0,1", "0,9", "Цена поставщика", "прайс, евро", "прайс, долл", "скидка поставщика", "с/с оборудования, рублей",
+            "НАЦЕНКА", "0,1", "0,9", "Цена поставщика", "с/с оборудования, рублей", "НАЦЕНКА", "0,1", "0,9", "ЦЕНА СОГЛАСНО ЛИСТУ МРОТ")
+        .rowspanizer({ vertical_align: 'middle' });
+    let j = 1;
+    let isHidden = true;
+    let isBefored = false;
+    function showTable() {
+        if (isHidden) {
+            isHidden = false;
+            $("#table").show();
+        }
+    }
+    function beforeTable() {
+        if (!isBefored) {
+            isBefored = true;
+            $("#table").addTds(
+                4,
+                "Рентабельность",
+                "ОБ",
+                3,
+                "Общая наценка"
+            )
+                .addTds(
+                    1,
+                    "КП",
+                    8
+                )
+                .tdsAddDType(
+                    3,
+                    "*fullcost",
+                    "*profitability",
+                    "*averagecoeffs",
+                    3,
+                    "mainmarkup"
+                )
+                .addTds(
+                    1,
+                    "СС",
+                    8
+                )
+                .tdsAddDType(
+                    3,
+                    "*costprice"
+                )
+                .addTds(
+                    1,
+                    "Наценка",
+                    8
+                )
+                .tdsAddDType(
+                    3,
+                    "*totalmarkup"
+                )
+                .addTds(
+                    1,
+                    "Курс EUR",
+                    8
+                )
+                .tdsAddDType(
+                    3,
+                    "eur"
+                )
+                .addTds(
+                    1,
+                    "Курс DOL",
+                    8
+                )
+                .tdsAddDType(
+                    3,
+                    "dol"
+                );
+        }
+    }
+    function addJob(item) {
+        showTable();
+        beforeTable();
+        //Add jobs
+        $("#table").addTds(
+            "<input type='button' class='job" + j + "-open button-open' value='>'><input type='button' class='job" + j + "-delete button-delete' value='X'>",
+            f(j),
+            f(item.Name),
+            f(item.Type),
+            f(item.Code),
+            f(item.Producer),
+            f(item.Measurer),
+            f(item.Units),
+            f(item.Amount),
+            f(item.Mass),
+            f(item.Note)
+        )
+            .trAddCl("job" + j, "job")
+            .tdsAddDType(
+                2,
+                "name",
+                "type",
+                "code",
+                "producer",
+                "measurer",
+                "units",
+                "amount",
+                "mass",
+                "note"
+            )
+            .addTds(
+                1,
+                "Затраты труда рабочих",
+                4,
+                "чел.-ч",
+                f(item.WLaborCosts)
+            )
+            .trAddCl("job" + j + "-hide")
+            .tdsAddDType(
+                7,
+                "wlaborcosts"
+            )
+            .addTds(
+                1,
+                "Средний разряд работы",
+                5,
+                f(item.AvRank)
+            )
+
+            .trAddCl("job" + j + "-hide")
+            .tdsAddDType(
+                7,
+                "avrank"
+            )
+            .addTds(
+                1,
+                "Затраты труда машинистов",
+                4,
+                "чел.-ч",
+                f(item.MLaborCosts)
+            )
+            .trAddCl("job" + j + "-hide")
+            .tdsAddDType(
+                7,
+                "mlaborcosts"
+            );
+        //Add mechs
+        $("#table").addTds(
+            "<input type='button' class='job" + j + "-mech-add button-add' value='+'>",
+            "МАШИНЫ И МЕХАНИЗМЫ"
+        )
+            .trAddCl("job" + j + "-hide", "mechs");
+        if (item.Mechs != null) {
+
+            for (let k = 0; k < item.Mechs.length; k++) {
+                let mech = item.Mechs[k];
+                let price = mech.MechNameMap.MechPrice;
+                if (price == undefined || price == null || (price.Eur == undefined && price.Dol == undefined && price.Rub == undefined))
+                    price = {
+                        Eur: "",
+                        Dol: "",
+                        Rub: ""
+                    };
+
+                $("#table").addTds(
+                    "<input type='button' class='job" + j + "-mech-delete button-delete' value='X'>",
+                    1,
+                    f(mech.Name),
+                    1,
+                    f(mech.Code),
+                    2,
+                    "маш.-ч",
+                    f(mech.Amount),
+                    8,
+                    f(price.Eur),
+                    f(price.Dol),
+                    f(price.Discount),
+                    4,
+                    f(price.Rub)
+                )
+                    .trAddCl("job" + j + "-hide", "mech" + k)
+                    .tdsAddDType(
+                        2,
+                        "mech-name",
+                        1,
+                        "mech-code",
+                        3,
+                        "mech-amount",
+                        8,
+                        "mech-eur",
+                        "mech-dol",
+                        "mech-discount",
+                        4,
+                        "mech-rub"
+                    );
+            }
+        }
+        //Add mats
+        $("#table").addTds(
+            "<input type='button' class='job" + j + "-mat-add button-add' value='+'>",
+            "МАТЕРИАЛЫ"
+        )
+            .trAddCl("job" + j + "-hide", "mats");
+        if (item.Mats != null) {
+
+            for (let k = 0; k < item.Mats.length; k++) {
+                let mat = item.Mats[k];
+                let price = mat.MatNameMap.MatPrice;
+                if (price == undefined || price == null || (price.Eur == undefined && price.Dol == undefined && price.Rub == undefined))
+                    price = {
+                        Eur: "",
+                        Dol: "",
+                        Rub: ""
+                    };
+
+                $("#table").addTds(
+                    "<input type='button' class='job" + j + "-mat-delete button-delete' value='X'>",
+                    1,
+                    f(mat.Name),
+                    1,
+                    f(mat.Code),
+                    2,
+                    f(mat.Units),
+                    f(mat.Amount),
+                    16,
+                    f(price.Eur),
+                    f(price.Dol),
+                    f(price.Discount),
+                    4,
+                    f(price.Rub)
+                )
+                    .trAddCl("job" + j + "-hide", "mat" + k)
+                    .tdsAddDType(
+                        2,
+                        "mat-name",
+                        1,
+                        "mat-code",
+                        2,
+                        "mat-units",
+                        "mat-amount",
+                        16,
+                        "mat-eur",
+                        "mat-dol",
+                        "mat-discount",
+                        4,
+                        "mat-rub"
+                    );
+            }
+
+        }
+        j++;
+
+        $('#table').find("tr.addjobs").remove();
+        $("#table").append("<tr class='addjobs'><td colspan='12'><input type='button' value='Создать работу' onclick='let t=$(this).closest(`tr`).detach();addEmptyJob();$(`#table`).append(t);'> </input></td></tr>");
+
+        //<!--Add styles-->
+        //<!--Hide/view job's content-->
+        //<!--Open/delete job-->
+
+        let hide = "";
+        for (let i = 1; i <= j; i++) {
+            hide += ".job" + i + "-hide";
+            if (i != j) {
+                hide += ",";
+            }
+
+            $(".job" + i + "-open").click(function () {
+                let jrows = $(".job" + i + "-hide,.job" + i + "-show");
+                jrows.toggleClass("job" + i + "-hide");
+                jrows.toggleClass("job" + i + "-show");
+            });
+
+            $(".job" + i + "-delete").click(function () {
+                let jAndRows = $(".job" + i + ",.job" + i + "-hide,.job" + i + "-show");
+                jAndRows.toggleClass("deleted");
+            });
+
+            $(".jobs-open").one("click", function cl() {
+                let jrows = $(".job" + i + "-hide,.job" + i + "-show");
+                jrows.addClass("job" + i + "-show");
+                jrows.removeClass("job" + i + "-hide");
+                $(this).one("click", function () {
+                    let jrows = $(".job" + i + "-hide,.job" + i + "-show");
+                    jrows.removeClass("job" + i + "-show");
+                    jrows.addClass("job" + i + "-hide");
+                    $(this).one("click", cl);
+                });
+            });
+        }
+        $("#table").on("click", "[class*='button-open']:not(.jobs-open)", function () {
+            let t = $(this);
+            if (t.val() == ">")
+                t.val("V");
+            else
+                t.val(">");
+        });
+        $(".jobs-open").bind("click", function () {
+            let t = $(this);
+            if (t.val() == ">") {
+                $("[class$='-open'],[class*='-open ']").val("V");
+            }
+            else {
+                $("[class$='-open'],[class*='-open ']").val(">");
+            }
+        });
+
+        $("<style>" + hide + "{ display: none; }</style>").appendTo('head');
+
+
+
+
+        $("#table").on("click", ".button-add[class*='mech']", function () {
+            let jnum = this.className.match(/job\d+-mech-add/)[0].match(/\d+/)[0];
+
+            let tr = $(this).closest("tr").nextUntil(".mats,.job,.addjobs").last();
+            tr = tr.length ? tr : $(this).closest("tr");
+            tr.addTdsAt("<input type='button' class='job" + jnum + "-mechNew" + "-delete button-delete' value='X'>");
+
+            tr = $(this).closest("tr").nextUntil(".mats,.job,.addjobs").last();
+
+            let k = 0;
+            if (tr.length > 0) {
+                k = tr.get(0).className.match(/mech\d+/)[0].match(/\d+/)[0];
+            }
+            else {
+                tr = $(this).closest("tr");
+            }
+
+            tr.trAddClAt("job" + jnum + "-show", "mech" + k)
+                .tdsAddDTypeAt(
+                    2,
+                    "mech-name",
+                    1,
+                    "mech-code",
+                    3,
+                    "mech-amount"
+                );
+            tr.find("input").filter(function () {
+                return this.className.split(/\s+/).find(function (i) {
+                    return (/job\d+-mechNew-delete/).test(i);
+                }) !== undefined;
+            })
+                .click(function (e) {
+                    $(e.target).closest("tr").remove();
+                });
+
+            let divs = tr.find("[data-type]").addClass("changed").wrapInner("<div class='changeable' contenteditable='true'></div>").find("[contenteditable='true']");
+
+            divs.contentEditable();
+            divs.bind("input", function cl(e) {
+                let t = e.target;
+
+                t = $(t);
+                let td = t.closest("td");
+
+                let rv = $("<input class='refresh-value' type='button' value='R'>");
+                rv.click(function (e) {
+                    e.stopPropagation();
+                    td.removeClass("inputed");
+                    td.find(".refresh-value").remove();
+                    t.text("");
+                    t.trigger('input');
+                });
+
+                if (t.text() != "") {
+                    td.addClass("inputed");
+                    if (td.find(".refresh-value").length == 0)
+                        td.append(rv);
+                }
+                else {
+                    td.removeClass("inputed");
+                    td.find(".refresh-value").remove();
+                }
+            });
+        });
+
+        $("#table").on("click", ".button-add[class*='mat']", function () {
+            let jnum = this.className.match(/job\d+-mat-add/)[0].match(/\d+/)[0];
+
+            let tr = $(this).closest("tr").nextUntil(".mechs,.job,.addjobs").last();
+            tr = tr.length ? tr : $(this).closest("tr");
+            tr.addTdsAt("<input type='button' class='job" + jnum + "-matNew" + "-delete button-delete' value='X'>");
+
+
+            tr = $(this).closest("tr").nextUntil(".mechs,.job,.addjobs").last();
+            let k = 0;
+            if (tr.length > 0) {
+                k = tr.get(0).className.match(/mat\d+/)[0].match(/\d+/)[0];
+            }
+            else {
+                tr = $(this).closest("tr");
+            }
+
+            tr.trAddClAt("job" + jnum + "-show", "mat" + k)
+                .tdsAddDTypeAt(
+                    2,
+                    "mat-name",
+                    1,
+                    "mat-code",
+                    2,
+                    "mat-units",
+                    "mat-amount"
+                );
+            tr.find("input").filter(function () {
+                return this.className.split(/\s+/).find(function (i) {
+                    return (/job\d+-matNew-delete/).test(i);
+                }) !== undefined;
+            })
+                .click(function (e) {
+                    $(e.target).closest("tr").remove();
+                });
+
+            let divs = tr.find("[data-type]").addClass("changed").wrapInner("<div class='changeable' contenteditable='true'></div>").find("[contenteditable='true']");
+            divs.contentEditable();
+            divs.bind("input", function cl(e) {
+                let t = e.target;
+
+                t = $(t);
+                let td = t.closest("td");
+
+                let rv = $("<input class='refresh-value' type='button' value='R'>");
+                rv.click(function (e) {
+                    e.stopPropagation();
+                    td.removeClass("inputed");
+                    td.find(".refresh-value").remove();
+                    t.text("");
+                });
+
+                if (t.text() != "") {
+                    td.addClass("inputed");
+                    if (td.find(".refresh-value").length == 0)
+                        td.append(rv);
+                }
+                else {
+                    td.removeClass("inputed");
+                    td.find(".refresh-value").remove();
+                }
+            });
+        });
+
+        //delete mech/mat
+        $("#table").find("td").find("input").filter(function () {
+            return this.className.split(/\s+/).find(function (i) {
+                return (/job\d+-(mech|mat)-delete/).test(i);
+            }) !== undefined;
+        })
+            .click(function (e) {
+                let tr = $(e.target).closest("tr");
+                tr.toggleClass("deleted");
+            });
+
+        $("#table").find("td")
+
+        let dts = $("[data-type]:not([data-type='info'])");
+        for (let i = 0; i < dts.length; i++) {
+            let dt = dts.eq(i);
+            dt.data("text", dt.text());
+            dt.attr("data-text", dt.text());
+            dt.wrapInner("<div class='changeable' contenteditable='true'></div>");
+        }
+
+        $("[contenteditable='true']").contentEditable();
+        //change
+        dts.find("div").bind("input", function cl(e) {
+            let t = e.target;
+
+            t = $(t);
+            let td = t.closest("td");
+            let rv = $("<input class='refresh-value' type='button' value='R'>");
+            rv.click(function (e) {
+                e.stopPropagation();
+                td.removeClass("changed");
+                td.find(".refresh-value").remove();
+                t.text(td.data("text"));
+                t.trigger('input');
+            });
+
+            if (t.text() != td.data("text")) {
+                td.addClass("changed");
+                if (td.find(".refresh-value").length == 0)
+                    td.append(rv);
+            }
+            else {
+                td.removeClass("changed");
+                td.find(".refresh-value").remove();
+            }
+        });
+
+        dts.filter(".matNew>*,.mechNew>*").find("div").bind("input", function cl(e) {
+            let t = e.target;
+
+            t = $(t);
+            let td = t.closest("td");
+            td.addClass("changed");
+
+            let rv = $("<input class='refresh-value' type='button' value='R'>");
+            rv.click(function (e) {
+                e.stopPropagation();
+                td.removeClass("inputed");
+                td.find(".refresh-value").remove();
+                t.text("");
+                t.trigger('input');
+            });
+
+            if (t.text() != "") {
+                td.addClass("inputed");
+                if (td.find(".refresh-value").length == 0)
+                    td.append(rv);
+            }
+            else {
+                td.removeClass("inputed");
+                td.find(".refresh-value").remove();
+            }
+        });
+    }
+
+    function addEmptyJob() {
+        //Add jobs
+        $("#table").addTds(
+            "<input type='button' class='job" + j + "-open button-open' value='>'><input type='button' class='job" + j + "-delete button-delete' value='X'>",
+            "" + j,
+        )
+            .trAddCl("job" + j, "job")
+            .tdsAddDType(
+                2,
+                "name",
+                "type",
+                "code",
+                "producer",
+                "measurer",
+                "units",
+                "amount",
+                "mass",
+                "note",
+                "info"
+            )
+            .addTds(
+                1,
+                "Затраты труда рабочих",
+                4,
+                "чел.-ч"
+            )
+            .trAddCl("job" + j + "-hide")
+            .tdsAddDType(
+                7,
+                "wlaborcosts"
+            )
+            .addTds(
+                1,
+                "Средний разряд работы",
+                5
+            )
+
+            .trAddCl("job" + j + "-hide")
+            .tdsAddDType(
+                7,
+                "avrank"
+            )
+            .addTds(
+                1,
+                "Затраты труда машинистов",
+                4,
+                "чел.-ч"
+            )
+            .trAddCl("job" + j + "-hide")
+            .tdsAddDType(
+                7,
+                "mlaborcosts"
+            );
+
+        $("#table").addTds(
+            "<input type='button' class='job" + j + "-mech-add button-add' value='+'>",
+            "МАШИНЫ И МЕХАНИЗМЫ"
+        )
+            .trAddCl("job" + j + "-hide", "mechs");
+
+        $("#table").addTds(
+            "<input type='button' class='job" + j + "-mat-add button-add' value='+'>",
+            "МАТЕРИАЛЫ"
+        )
+            .trAddCl("job" + j + "-hide", "mats");
+
+
+        $(".job" + j + "-open").click(function () {
+            let jrows = $(".job" + j + "-hide,.job" + j + "-show");
+            jrows.toggleClass("job" + j + "-hide");
+            jrows.toggleClass("job" + j + "-show");
+        });
+
+        $(".job" + j + "-delete").click(function () {
+            $(".job" + j + ",.job" + j + "-hide,.job" + j + "-show").remove();
+            //Changing of following numbers isn't necessary
+        });
+
+        $(".jobs-open").one("click", function cl() {
+            let jrows = $(".job" + j + "-hide,.job" + j + "-show");
+            jrows.addClass("job" + j + "-show");
+            jrows.removeClass("job" + j + "-hide");
+            $(this).one("click", function () {
+                let jrows = $(".job" + j + "-hide,.job" + j + "-show");
+                jrows.removeClass("job" + j + "-show");
+                jrows.addClass("job" + j + "-hide");
+                $(this).one("click", cl);
+            });
+        });
+
+        $("<style>.job" + j + "-hide{ display: none; }</style>").appendTo('head');
+
+        j++;
+
+        let dts = $("[data-type]:not([data-type='info'])").filter(function () {
+            return $(this).children("div").length == 0;
+        });
+        for (let i = 0; i < dts.length; i++) {
+            let dt = dts.eq(i);
+            dt.data("text", dt.text());
+            dt.attr("data-text", dt.text());
+            dt.wrapInner("<div class='changeable' contenteditable='true'></div>");
+        }
+
+        $("[contenteditable='true']").contentEditable();
+        //change
+        dts.find("div").bind("input", function cl(e) {
+            let t = e.target;
+
+            t = $(t);
+            let td = t.closest("td");
+            let rv = $("<input class='refresh-value' type='button' value='R'>");
+            rv.click(function (e) {
+                e.stopPropagation();
+                td.removeClass("changed");
+                td.find(".refresh-value").remove();
+                t.text(td.data("text"));
+                t.trigger('input');
+            });
+
+            if (t.text() != td.data("text")) {
+                td.addClass("changed");
+                if (td.find(".refresh-value").length == 0)
+                    td.append(rv);
+            }
+            else {
+                td.removeClass("changed");
+                td.find(".refresh-value").remove();
+            }
+        });
+    }
+
+    //Create master-slave relationships between cells
+    function chainCells() {
+        //register all independent cells (which values can be changed only by user or db)
+        //for using it in dependent cells
+
+        let toCells = $("[data-type]:not([data-type^='*'])");
+        toCells.each(function () {
+            let el = $(this);
+            let trclass = el.closest("tr").get(0).className;
+
+            let toname = trclass.match(/job\d+/)[0] + "-";
+            if (/mat\d+/.test(trclass))
+                toname += trclass.match(/mat\d+/)[0] + "-";
+            if (/mech\d+/.test(trclass))
+                toname += trclass.match(/mech\d+/)[0] + "-";
+
+            new Cell(toname + el.data("type"),el.find("div"));
+        });
+
+        //register dependent(formula) cells
+        //{ismany,formula,cell's name(temporary)}
+        let fn = [
+            {
+                ismany: false,
+                formula: () =>alert(123),
+                name:"fullcost"
+            },
+            {
+                ismany: false,
+                formula: () =>alert(123),
+                name:"profitability"
+            },
+            {
+                ismany: false,
+                formula: () =>alert(123),
+                name:"averagecoeffs"
+            },
+            {
+                ismany: false,
+                formula: () =>alert(123),
+                name:"costprice"
+            },
+            {
+                ismany: false,
+                formula: () =>alert(123),
+                name:"totalmarkup"
+            },
+        ];
+        let toFormulaCells = $("[data-type^='*']");
+        toFormulaCells.each(function () {
+
+        });
+    }
+
+    //Utility functions:
+    //format function:convert num to string, null and undefined to ""
+    function f(toF) {
+        if (toF == null || toF === undefined)
+            return "";
+        else
+            return "" + toF;
+    }
+</script>
+
+

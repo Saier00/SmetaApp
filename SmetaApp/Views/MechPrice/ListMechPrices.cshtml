@@ -1,0 +1,152 @@
+﻿<link href="~/Content/PagedList.css" rel="stylesheet" type="text/css" />
+@model PagedList.IPagedList<SmetaApp.Models.MechPrice>
+@using PagedList.Mvc;
+
+@{
+    ViewBag.Title = "ListMechPrices";
+
+    Func<int, string> pageFunc;
+    string Action;
+    if (ViewBag.Type == "Name")
+    {
+        Action = "ListFindMechPriceByName";
+        pageFunc = page => Url.Action("ListFindMechPriceByName", new { ViewBag.Search, page, size = Model.PageSize });
+    }
+    else
+    {
+        Action = "ListMechPrices";
+        pageFunc = page => Url.Action("ListMechPrices", new { page, size = Model.PageSize });
+    }
+}
+<!--PageStart-->
+<h2>ListMechPrices</h2>
+
+<div class="find-name">
+    <div><label for="findname">Поиск по наименованию:</label></div>
+    <div>
+        @using (Ajax.BeginForm("FindMechPriceByNamePartial", "MechNameMap", new AjaxOptions { UpdateTargetId = "results" }))
+        {
+            <input type="text" class="find-mech-price-by-name" name="Name" placeholder="Наименование" autocomplete="off" id="findname" />
+        }
+        <span id="results"></span>
+
+
+        @using (Html.BeginForm("ListFindMechPriceByName", "MechPrice", FormMethod.Get, new { id = "findnameform" }))
+        {
+            <input type="text" hidden name="Search" />
+            <input type="submit" value="Поиск" />
+        }
+    </div>
+</div>
+
+<table class="table">
+    <tr>
+        <th>
+            Название
+        </th>
+        <th>
+            Код
+        </th>
+        <th>
+            Eur
+        </th>
+        <th>
+            Dol
+        </th>
+        <th>
+            Rub
+        </th>
+        <th>
+            Скидка поставщика
+        </th>
+        <th>
+            Другие имена
+        </th>
+    </tr>
+
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Name)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Code)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Eur)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Dol)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Rub)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Discount)
+            </td>
+            <td>
+                <input type="button" value="Отобразить" onclick="$(this).hide(); $(this).nextAll('ol').show();" />
+                <ol hidden>
+                    @foreach (var n in item.AnotherNames)
+                    {
+                        <li>"@n.MechName"</li>
+                    }
+                </ol>
+            </td>
+        </tr>
+    }
+
+</table>
+
+Страница @(Model.PageCount < Model.PageNumber ? 0 : Model.PageNumber) из @Model.PageCount
+@Html.PagedListPager(Model, pageFunc)
+@using (Html.BeginForm(Action, "MechPrice", FormMethod.Get, new { id = "pagesizeform" }))
+{
+    <select name="size" id="pagesize">
+        <option value="10">
+            10
+        </option>
+        <option value="50">
+            50
+        </option>
+        <option value="100">
+            100
+        </option>
+    </select>
+    if (ViewBag.Search != "")
+    {
+        <input name="Search" value="@ViewBag.Search" hidden />
+    }
+}
+<!--PageEnd-->
+<script>
+    $("#pagesize").find("option[value='@Model.PageSize']").attr("selected", "selected");
+    $("#pagesize").change(function () {
+        $(this).closest("form").submit();
+    });
+
+    //ajax search
+    function hideOnFocus(id) {
+        return ()=>$(id).hide();
+    }
+
+    let named = hideOnFocus("#results");
+    $("#findname").bind("input", function () {
+        let t = $(this);
+        if (t.val() != "") {
+            t.closest("form").submit();
+            $("#results").show();
+            $(":not(#results)").not(t).one("focus", named);
+        }
+        else {
+            $("#results").hide();
+            $(":not(#results)").not(t).off("focus", named);
+        }
+    });
+
+
+    $("#findnameform").submit(function () {
+        $(this).find("[name='Search']").val($("#findname").val());
+    });
+</script>

@@ -1,0 +1,71 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+@if (ViewBag.UserCreated == true)
+{
+    <h4 style="color:green;">Пользователь @ViewBag.UserName успешно создан!</h4>
+    <br />
+}
+@if (ViewBag.TemplateCreated == true)
+{
+    <h4 style="color:green;">Шаблон @ViewBag.TemplateName успешно создан!</h4>
+    <br />
+}
+@if (ViewBag.TemplateEdited == true)
+{
+    <h4 style="color:green;">Шаблон @ViewBag.TemplateName успешно изменён!</h4>
+    <br />
+}
+@if (this.User.Identity.IsAuthenticated)
+{
+    <div class="row" style="vertical-align: central;text-align: center;" id="left">
+        <div class="col-md-3 border-block">
+            @if (this.User.IsInRole("User"))
+            {
+                <div class="alert-link">@Html.ActionLink("Новый расчет", "ListJobs", "Job")</div>
+                <br />
+                <div class="alert-link">@Html.ActionLink("Прайс-листы Материалов", "ListMatPrices", "MatPrice")</div>
+                <br />
+                <div class="alert-link">@Html.ActionLink("Прайс-листы Механизмов", "ListMechPrices", "MechPrice")</div>
+            }
+        </div>
+        <div class="col-md-3 col-md-offset-1 border-block" id="right">
+            <div style="margin-top:15px;margin-bottom:10px;">
+                @if (this.User.IsInRole("Admin"))
+                {
+                    <div class="alert-link">@Html.ActionLink("Редактировать работы", "UDJobs", "Job")</div>
+                    <h5>Прайс-листы материалов:</h5>
+                    <div class="alert-link">@Html.ActionLink("Редактировать", "EditMatPrices", "MatPrice")</div>
+                    <div class="alert-link">@Html.ActionLink("Добавить", "AddMatPrices", "MatPrice")</div>
+                    <h5>Прайс-листы механизмов:</h5>
+                    <div class="alert-link">@Html.ActionLink("Редактировать", "EditMechPrices", "MechPrice")</div>
+                    <div class="alert-link">@Html.ActionLink("Добавить", "AddMechPrices", "MechPrice")</div>
+                }
+            </div>
+            <div style="margin-top:15px;margin-bottom:10px;">
+                @if (this.User.IsInRole("Observer"))
+                {
+                    <h4>!!!</h4>
+                }
+            </div>
+            <div style="margin-top:15px;margin-bottom:10px;">
+                @if (this.User.IsInRole("Registrator"))
+                {
+                    <div class="alert-link">@Html.ActionLink("Зарегистрировать нового пользователя", "Register", "Account")</div>
+                }
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <h2>Перед началом работы, войдите в систему.</h2>
+}
+
+<script>
+    if ($("#right").children().length == 0)
+        $("#right").hide();
+    if ($("#left").children().length == 0)
+        $("#left").hide();
+</script>

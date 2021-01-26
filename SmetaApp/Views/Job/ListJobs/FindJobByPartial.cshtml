@@ -1,0 +1,35 @@
+﻿@model List<SmetaApp.Models.Job>
+
+
+<div class="result-space">
+    @foreach (var j in Model)
+    {
+        string show = "";
+        if (ViewBag.By == "Name")
+        {
+            show = j.Name;
+        }
+        else if (ViewBag.By == "Code")
+        {
+            show = j.Code;
+        }
+        else if (ViewBag.By == "Type")
+        {
+            show = j.Type;
+        }
+        else if (ViewBag.By == "Mat")
+        {
+            show = "{"+string.Join(", ",j.Mats.Select(m=>m.Name))+"}";
+        }
+        else if (ViewBag.By == "Mech")
+        {
+            show = "{"+string.Join(", ",j.Mechs.Select(m=>m.Name))+"}";
+        }
+        <div onclick="let inp = $(this).closest('span').prevAll('form').find('input[name]'); inp.val($(this).text()); inp.trigger('input');" class="find-result" >@show</div>
+    }
+</div>
+
+<script>
+    if ("@Model.Any()"== "False")
+        $(".result-space").hide();
+</script>

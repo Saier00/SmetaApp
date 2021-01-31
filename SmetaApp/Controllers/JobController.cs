@@ -13,6 +13,7 @@ using ClosedXML.Excel;
 
 namespace SmetaApp.Controllers
 {
+    [Authorize (Roles = RolesNames.User)]
     public class JobController : Controller
     {
         private IJobRepository Repository;
@@ -27,10 +28,10 @@ namespace SmetaApp.Controllers
             return View();
         }
 
-        //ADMIN ONLY:
 
         // GET: Job/UDJobs
         [HttpGet]
+        [Authorize(Roles = RolesNames.Admin)]
         public ActionResult UDJobs(int? page,int? size)
         {
             int pageSize = size?? 10;
@@ -41,12 +42,14 @@ namespace SmetaApp.Controllers
             return HttpNotFound();
         }
         [HttpPost]
+        [Authorize(Roles = RolesNames.Admin)]
         public void DeleteJob(int[] Ids)
         {
             foreach(int id in Ids)
                 Repository.DeleteJob(id);
         }
         [HttpPost]
+        [Authorize(Roles = RolesNames.Admin)]
         public void UpdateJob(List<Job> Jobs)
         {
             foreach(Job Job in Jobs)
@@ -54,6 +57,7 @@ namespace SmetaApp.Controllers
         }
         // POST: Job/FindJobByNamePartial{Name=...}
         [HttpPost]
+        [Authorize(Roles = RolesNames.Admin)]
         public ActionResult UDFindJobByNamePartial(string Name)
         {
             var jobs = Repository.Jobs.Where(j=>j.Name.Contains(Name));
@@ -61,12 +65,14 @@ namespace SmetaApp.Controllers
         }
         // POST: Job/FindJobByCodePartial{/Code=...}
         [HttpPost]
+        [Authorize(Roles = RolesNames.Admin)]
         public ActionResult UDFindJobByCodePartial(string Code)
         {
             var jobs = Repository.Jobs.Where(j => j.Code.Contains(Code));
             return PartialView("~/Views/Job/UDJobs/FindJobByCodePartial.cshtml", jobs.Take(5).ToList());
         }
         [HttpPost]
+        [Authorize(Roles = RolesNames.Admin)]
         public ActionResult UDFindJobByTypePartial(string Type)
         {
             var jobs = Repository.Jobs.Where(j => j.Code.Contains(Type));
@@ -235,12 +241,14 @@ namespace SmetaApp.Controllers
 
         // GET: Job/AddJobs
         [HttpGet]
+        [Authorize(Roles = RolesNames.Admin)]
         public ActionResult AddJobs()
         {
             return View();
         }
         // POST: Job/AddJobs
         [HttpPost]
+        [Authorize(Roles = RolesNames.Admin)]
         public void AddJobs(List<Job> Jobs, bool? noprice=null)
         {
             if (noprice!=null&&(bool)noprice)
@@ -255,6 +263,7 @@ namespace SmetaApp.Controllers
             }
         }
         [HttpPost]
+        [Authorize(Roles = RolesNames.Admin)]
         public JsonResult CheckJobs(NameType[] js)
         {
             bool[] res = js.Select(j => Repository.Jobs.Any(item => item.Name == j.Name&&item.Type==j.Type)).ToArray();
@@ -264,6 +273,7 @@ namespace SmetaApp.Controllers
 
         static object locker = new object();
         [HttpPost]
+        [Authorize(Roles = RolesNames.Admin)] 
         public JsonResult ParseExcel(HttpPostedFileBase file, int? alg)
         {
             if (file != null && file.ContentLength > 0 && Path.GetExtension(file.FileName).ToLower() == ".xlsx"&&alg!=null)

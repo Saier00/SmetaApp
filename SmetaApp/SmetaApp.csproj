@@ -231,7 +231,9 @@
     </Compile>
     <Compile Include="Models\EntityFramework\Identity\AccountViewModels.cs" />
     <Compile Include="Models\EntityFramework\EFRepository.cs" />
-    <Compile Include="Models\EntityFramework\Initializers\RolesUsersInitializer.cs" />
+    <Compile Include="Models\EntityFramework\RolesNames.cs" />
+    <Compile Include="Util\InitializersRegistration.cs" />
+    <Compile Include="Util\Initializers\RolesUsersInitializer.cs" />
     <Compile Include="Models\IRepositories\IJobRepository.cs" />
     <Compile Include="Models\IRepositories\IMatNameMapRepository.cs" />
     <Compile Include="Models\IRepositories\IMatPriceRepository.cs" />
@@ -239,7 +241,7 @@
     <Compile Include="Models\IRepositories\IMechNameMapRepository.cs" />
     <Compile Include="Models\IRepositories\IMechPriceRepository.cs" />
     <Compile Include="Models\IRepositories\IMechRepository.cs" />
-    <Compile Include="Models\EntityFramework\Initializers\JobInitializerTesting.cs" />
+    <Compile Include="Util\Initializers\JobInitializerTesting.cs" />
     <Compile Include="Models\EntityFramework\Models.cs" />
     <Compile Include="Models\EntityFramework\Identity\IdentityModels.cs" />
     <Compile Include="Models\EntityFramework\Identity\ManageViewModels.cs" />

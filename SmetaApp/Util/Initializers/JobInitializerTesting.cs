@@ -1,9 +1,10 @@
-﻿using System.Data.Entity;
-using System;
+﻿using System;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace SmetaApp.Models
+using SmetaApp.Models;
+
+namespace SmetaApp.Util
 {
     public class JobInitializerTesting
     {

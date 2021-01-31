@@ -7,6 +7,7 @@ using PagedList;
 
 namespace SmetaApp.Controllers
 {
+    [Authorize(Roles = RolesNames.User)]
     public class MechPriceController : Controller
     {
         private IMechPriceRepository Repository;
@@ -24,7 +25,7 @@ namespace SmetaApp.Controllers
                 return View(mps.ToPagedList(pageNumber, pageSize));
             return HttpNotFound();
         }
-        
+        [Authorize(Roles = RolesNames.Admin)]
         public ActionResult EditMechPrices(int? page, int? size)
         {
             int pageSize = size ?? 50;
@@ -35,6 +36,7 @@ namespace SmetaApp.Controllers
             return HttpNotFound();
         }
         [HttpPost]
+        [Authorize(Roles = RolesNames.Admin)]
         public ActionResult EditMechPrices(List<MechPriceToDel> mptds,int? page, int? size)
         {
             int pageSize = size ?? 50;
@@ -65,6 +67,7 @@ namespace SmetaApp.Controllers
             return HttpNotFound();
         }
         [HttpGet]
+        [Authorize(Roles = RolesNames.Admin)]
         public ActionResult EditFindMechPriceByName(string Search, int? page, int? size)
         {
             if (Search == null || Search == "")
@@ -98,11 +101,13 @@ namespace SmetaApp.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = RolesNames.Admin)]
         public ActionResult AddMechPrices()
         {
             return View();
         }
         [HttpPost]
+        [Authorize(Roles = RolesNames.Admin)]
         public void AddMechPrices(List<MechPrice> mps)
         {
             if (mps != null)

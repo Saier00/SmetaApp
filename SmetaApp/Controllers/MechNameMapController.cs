@@ -4,6 +4,7 @@ using SmetaApp.Models;
 
 namespace SmetaApp.Controllers
 {
+    [Authorize(Roles = RolesNames.User)]
     public class MechNameMapController : Controller
     {
         private IMechNameMapRepository Repository;
@@ -39,6 +40,7 @@ namespace SmetaApp.Controllers
         }
         // POST: MechNameMap/BindName(bm=...)
         [HttpPost]
+        [Authorize(Roles = RolesNames.Admin)]
         public JsonResult BindName(BindingModel bm)
         {
             var Old = Repository.MechNameMaps.FirstOrDefault(m => m.MechName == bm.Old);

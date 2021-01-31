@@ -89,7 +89,7 @@ namespace SmetaApp.Controllers
         }
 
         // GET: /Account/Register
-        [Authorize(Roles = "Registrator")]
+        [Authorize(Roles = RolesNames.Registrator)]
         public ActionResult Register()
         {
             return View();
@@ -98,7 +98,7 @@ namespace SmetaApp.Controllers
         //
         // POST: /Account/Register
         [HttpPost]
-        [Authorize(Roles = "Registrator")]
+        [Authorize(Roles = RolesNames.Registrator)]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> Register(RegisterViewModel model)
         {

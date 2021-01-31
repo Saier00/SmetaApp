@@ -4,6 +4,7 @@ using System.Linq;
 
 namespace SmetaApp.Controllers
 {
+    [Authorize(Roles = RolesNames.User)]
     public class MechController : Controller
     {
         private IMechRepository Repository;
@@ -16,6 +17,7 @@ namespace SmetaApp.Controllers
         {
             return View(Repository.Mechs);
         }
+        [Authorize(Roles = RolesNames.Admin)]
         public ActionResult UDFindJobByMechPartial(string Mech)
         {
             var names = Repository.Mechs.Where(m => m.Job != null && m.Name.Contains(Mech)).Select(m => m.Name).Distinct();

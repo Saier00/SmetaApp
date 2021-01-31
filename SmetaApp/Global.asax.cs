@@ -10,7 +10,6 @@ using Ninject.Modules;
 using Ninject.Web.Mvc;
 
 using SmetaApp.Util;
-using SmetaApp.Models;
 
 namespace SmetaApp
 {
@@ -18,7 +17,7 @@ namespace SmetaApp
     {
         protected void Application_Start()
         {
-            Database.SetInitializer(new RolesUsersInitializer());
+            Database.SetInitializer(new InitializersRegistration());
 
             AreaRegistration.RegisterAllAreas();
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);

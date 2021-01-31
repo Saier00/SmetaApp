@@ -7,6 +7,7 @@ using PagedList;
 
 namespace SmetaApp.Controllers
 {
+    [Authorize(Roles = RolesNames.User)]
     public class MatPriceController : Controller
     {
         private IMatPriceRepository Repository;
@@ -25,6 +26,7 @@ namespace SmetaApp.Controllers
             return HttpNotFound();
         }
         [HttpGet]
+        [Authorize(Roles = RolesNames.Admin)]
         public ActionResult EditMatPrices(int? page, int? size)
         {
             int pageSize = size ?? 50;
@@ -35,6 +37,7 @@ namespace SmetaApp.Controllers
             return HttpNotFound();
         }
         [HttpPost]
+        [Authorize(Roles = RolesNames.Admin)]
         public ActionResult EditMatPrices(List<MatPriceToDel> mptds,int? page, int? size)
         {
             int pageSize = size ?? 50;
@@ -65,6 +68,7 @@ namespace SmetaApp.Controllers
             return HttpNotFound();
         }
         [HttpGet]
+        [Authorize(Roles = RolesNames.Admin)]
         public ActionResult EditFindMatPriceByName(string Search, int? page, int? size)
         {
             if (Search == null || Search == "")
@@ -97,11 +101,13 @@ namespace SmetaApp.Controllers
             return HttpNotFound();
         }
         [HttpGet]
+        [Authorize(Roles = RolesNames.Admin)]
         public ActionResult AddMatPrices()
         {
             return View();
         }
         [HttpPost]
+        [Authorize(Roles = RolesNames.Admin)]
         public void AddMatPrices(List<MatPrice> mps)
         {
             if (mps != null)

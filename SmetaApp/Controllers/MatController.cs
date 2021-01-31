@@ -4,6 +4,7 @@ using System.Linq;
 
 namespace SmetaApp.Controllers
 {
+    [Authorize(Roles = RolesNames.User)]
     public class MatController : Controller
     {
         private IMatRepository Repository;
@@ -16,6 +17,7 @@ namespace SmetaApp.Controllers
         {
             return View(Repository.Mats);
         }
+        [Authorize(Roles = RolesNames.Admin)]
         public ActionResult UDFindJobByMatPartial(string Mat)
         {
             var names = Repository.Mats.Where(m => m.Job != null && m.Name.Contains(Mat)).Select(m=>m.Name).Distinct();

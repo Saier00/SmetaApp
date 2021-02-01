@@ -303,20 +303,21 @@
         //mp's names can't be too short or empty
         $("#table").on("input","input[name='Name']",function (e) {
             let t = $(e.target);
+            let i = t.closest("tr").find(".info");
             if (t.val() == "") {
-                emptyName(t);
-                shortNameRemove(t);
+                emptyName(i);
+                shortNameRemove(i);
             }
             else if (t.val().length < 5) {
-                shortName(t);
-                emptyNameRemove(t);
+                shortName(i);
+                emptyNameRemove(i);
                 //ajax checking (without hints)
                 addMPNameEl(t);
                 submitCheckMPsForm();
             }
             else {
-                emptyNameRemove(t);
-                shortNameRemove(t);
+                emptyNameRemove(i);
+                shortNameRemove(i);
                 //ajax checking (without hints)
                 addMPNameEl(t);
                 submitCheckMPsForm();

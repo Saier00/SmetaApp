@@ -11,3 +11,13 @@ The views description and permisions are shown on the following schema:
 Application's data has following structure:
 
 ![Imgur](https://imgur.com/13FEJU6.png)
+
+## Testing
+Initializer JobInitializersTesting is used for seed the DB with jobs for testing.
+SeedUsers method of RolesUsersInitializer class is used for seed the DB with users including superuser account which has all role's permissions.
+
+## TODO
+- Add opportunity to create, change and use table's templates for UDJobs and ListJobs views.
+- Change the DOM oriented SDK tools for parsing and the parsing algorithms to SAX oriented for processing large (10000+ rows) xlsx files.
+- Add validation errors' alerts.
+- Remove deleted links inside the navigation bar.

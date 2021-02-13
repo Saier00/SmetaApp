@@ -225,7 +225,9 @@
     <Compile Include="Controllers\MatPriceController.cs" />
     <Compile Include="ExcelParsing\Alg2.cs" />
     <Compile Include="ExcelParsing\Alg1.cs" />
-    <Compile Include="ExcelParsing\Basics.cs" />
+    <Compile Include="ExcelParsing\ClosedXML.cs" />
+    <Compile Include="ExcelParsing\Util\Basics.cs" />
+    <Compile Include="ExcelParsing\Util\ProxyModels.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>

@@ -1,16 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using ClosedXML.Excel;
+﻿using System.Collections.Generic;
 
 namespace SmetaApp.ExcelParsing
 {
-    public class SyntaxError : Exception
-    {
-        public SyntaxError(string message)
-            : base(message)
-        { }
-    }
-
     public class JobProxy
     {
         public JobProxy()
@@ -52,9 +43,5 @@ namespace SmetaApp.ExcelParsing
     public class RowMech : MechProxy
     {
         public int row { get; set; }
-    }
-    public interface IJobParsing
-    {
-        JobProxy[] Parse(XLWorkbook wb);
     }
 }

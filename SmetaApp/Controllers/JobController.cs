@@ -281,7 +281,7 @@ namespace SmetaApp.Controllers
                 string path = Path.Combine(Server.MapPath("~/UploadFile"), Path.GetFileName(file.FileName));
                 try
                 {
-                    //if file is not deleting save it
+                    //save file
                     lock (locker)
                     {
                         file.SaveAs(path);
@@ -298,7 +298,7 @@ namespace SmetaApp.Controllers
                         return Json(new { error = new { message = "Был передан неправильный номер алгоритма" } }, JsonRequestBehavior.DenyGet);
 
 
-                    using (XLWorkbook workbook = new XLWorkbook(path, XLEventTracking.Disabled))
+                    using (IWorkbook workbook = new DOMWorkbook(path))
                     {
                         try
                         {

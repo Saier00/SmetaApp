@@ -35,6 +35,7 @@
                 @if (this.User.IsInRole("Admin"))
                 {
                     <div class="alert-link">@Html.ActionLink("Редактировать работы", "UDJobs", "Job")</div>
+                    <div class="alert-link">@Html.ActionLink("Добавить работы", "AddJobs", "Job")</div>
                     <h5>Прайс-листы материалов:</h5>
                     <div class="alert-link">@Html.ActionLink("Редактировать", "EditMatPrices", "MatPrice")</div>
                     <div class="alert-link">@Html.ActionLink("Добавить", "AddMatPrices", "MatPrice")</div>

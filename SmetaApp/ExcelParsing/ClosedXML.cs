@@ -26,7 +26,7 @@ namespace SmetaApp.ExcelParsing
 
         public IEnumerator GetEnumerator()
         {
-            List<DOMSheet> sheets = workbook.Worksheets.Select(ws => new DOMSheet(ws)).ToList();
+            IEnumerable<DOMSheet> sheets = workbook.Worksheets.Select(ws => new DOMSheet(ws));
             return sheets.GetEnumerator();
         }
 

@@ -298,7 +298,7 @@ namespace SmetaApp.Controllers
                         return Json(new { error = new { message = "Был передан неправильный номер алгоритма" } }, JsonRequestBehavior.DenyGet);
 
 
-                    using (IWorkbook workbook = new DOMWorkbook(path))
+                    using (IWorkbook workbook = new SAXWorkbook(path))
                     {
                         try
                         {

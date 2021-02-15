@@ -18,6 +18,5 @@ SeedUsers method of RolesUsersInitializer class is used for seed the DB with use
 
 ## TODO
 - Add opportunity to create, change and use table's templates for UDJobs and ListJobs views.
-- Change the DOM oriented SDK tools for parsing and the parsing algorithms to SAX oriented for processing large (10000+ rows) xlsx files.
 - Add validation errors' alerts.
 - Remove deleted links inside the navigation bar.
